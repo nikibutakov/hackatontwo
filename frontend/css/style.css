@@ -2,39 +2,53 @@
   РОЛЬ: Frontend-разработчик
   ЧТО ЗДЕСЬ: оформление всего сайта.
 
-  СТИЛЬ — «бланк ОТК / измерительный прибор»:
-  - светлая тёплая «бумага» и почти чёрные «чернила» — хорошо читается
-    на проекторе (тёмные темы на проекторе выцветают);
+  СТИЛЬ — «протокол испытаний / измерительный прибор»:
   - тонкие линейки и рамки вместо карточек с тенями, углы почти прямые;
-  - акцент — медь (как дорожки печатной платы);
   - Golos Text — текст, IBM Plex Mono — числа, координаты, FPS, mAP
     (шрифты встроены в проект: css/fonts.css, без интернета не ломаются);
   - подписи разделов — капителью с разрядкой, как графы бланка.
 
+  ПАЛИТРА — четыре синих из референса команды:
+    #081426 фон · #142A44 блоки · #4A74A7 акцент и линии · #DCEAF7 текст.
+  Производные (подобраны по контрасту WCAG на фоне #142A44):
+    #7FA3D1 — акцент-ТЕКСТОМ (5,6:1; сам #4A74A7 даёт лишь 3:1),
+    #5A8FD8 — столбики mAP (#4A74A7 на тёмном читается почти серым),
+    #8FA6C2 — приглушённый текст (5,8:1).
+  Все цвета — только через переменные ниже; в правилах hex не писать.
+
   ЦВЕТА ВЕРДИКТОВ СМЫСЛОВЫЕ, их не менять: ok — зелёный,
   warning — янтарный, reject — красный. Статус всегда дублируется
-  значком или текстом (зелёный и янтарный при дальтонизме близки).
-  Палитра проверена dataviz/validate_palette.js на фоне --panel.
+  значком или текстом (янтарный и красный, зелёный и янтарный при
+  дальтонизме близки). Проверено dataviz/validate_palette.js.
   ============================================================ */
 
 :root {
-  /* бумага и чернила */
-  --bg: #efede6;          /* фон страницы */
-  --panel: #fbfaf6;       /* поля, таблицы, блоки */
-  --border: #cfcabd;      /* тонкие линейки */
-  --rule: #23211d;        /* жирная линейка (шапка, заголовки разделов) */
-  --text: #23211d;
-  --muted: #6e6a60;
-  /* акцент — медь */
-  --accent: #9a4a1c;
-  --accent-soft: #f3e3d6;
-  /* статусы */
-  --ok: #2e7d32;
-  --ok-soft: #e3efdf;
-  --warning: #b98200;
-  --warning-soft: #f6ecd0;
-  --reject: #c62828;
-  --reject-soft: #f6dedb;
+  /* основа — палитра референса */
+  --bg: #081426;          /* фон страницы */
+  --panel: #142a44;       /* поля, таблицы, блоки */
+  --border: #27466b;      /* тонкие линейки (между блоком и акцентом) */
+  --rule: #4a74a7;        /* жирная линейка (шапка, заголовки разделов) */
+  --text: #dceaf7;
+  --muted: #8fa6c2;
+  --stage: #040b16;       /* «предметный столик» под фото и видео */
+  --on-color: #ffffff;    /* текст на кнопке-акценте */
+  /* акцент */
+  --accent: #4a74a7;      /* заливки: кнопка, подчёркивание вкладки */
+  --accent-hover: #5a82b6;
+  --accent-text: #7fa3d1; /* акцент текстом и тонкими рамками */
+  --accent-soft: rgba(74, 116, 167, .22);
+  --bar: #5a8fd8;         /* столбики mAP */
+  /* статусы: заливка / текст / подложка */
+  --ok: #2fa67e;
+  --ok-text: #4cc79a;
+  --ok-soft: rgba(47, 166, 126, .14);
+  --warning: #c4891a;
+  --warning-text: #e3ae45;
+  --warning-soft: rgba(196, 137, 26, .14);
+  --reject: #e2505a;
+  --reject-text: #f07c84;
+  --reject-soft: rgba(226, 80, 90, .14);
+  --status-glyph: #081426; /* значок ✓ ! ✖ на цветном кружке — тёмный, читается на всех трёх */
 
   --font-text: "Golos Text", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
@@ -146,8 +160,8 @@ select {
 }
 .btn:hover:not(:disabled) { background: var(--bg); }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
-.btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn--primary:hover:not(:disabled) { background: #7f3c15; }
+.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-color); }
+.btn--primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn--file { margin-top: 8px; }
 
 /* ---------- Вкладка «Фото» ---------- */
@@ -197,14 +211,14 @@ select {
   cursor: pointer;
 }
 .example:hover { border-color: var(--accent); color: var(--text); }
-.example img { width: 94px; height: 64px; object-fit: cover; background: #111; }
+.example img { width: 94px; height: 64px; object-fit: cover; background: var(--stage); }
 .example span { max-width: 94px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Поле изображения/видео — тёмное, как предметный столик */
 .canvas-wrap {
   position: relative;
   margin-top: 16px;
-  background: #1c1b19;
+  background: var(--stage);
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   min-height: 320px;
@@ -217,7 +231,7 @@ select {
 
 .empty-hint {
   position: absolute;
-  color: #9a968b;
+  color: var(--muted);
   font-size: 14px;
   pointer-events: none;
 }
@@ -239,20 +253,20 @@ select {
 }
 .verdict__reason { margin: 6px 0 0; color: var(--text); }
 .verdict--ok      { background: var(--ok-soft);      border-color: var(--ok); }
-.verdict--ok      .verdict__status { color: var(--ok); }
+.verdict--ok      .verdict__status { color: var(--ok-text); }
 .verdict--warning { background: var(--warning-soft); border-color: var(--warning); }
-.verdict--warning .verdict__status { color: #8a6100; }   /* темнее — читаемость текста */
+.verdict--warning .verdict__status { color: var(--warning-text); }
 .verdict--reject  { background: var(--reject-soft);  border-color: var(--reject); }
-.verdict--reject  .verdict__status { color: var(--reject); }
+.verdict--reject  .verdict__status { color: var(--reject-text); }
 
 /* Разбор вердикта по классам: значок статуса + название + цифры */
-.verdict__defects { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px solid rgba(35, 33, 29, .15); }
+.verdict__defects { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px solid var(--border); }
 .verdict__defect { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 14px; }
 .verdict__defect-dot {
   flex: none;
   width: 16px; height: 16px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; color: #fff;
+  font-size: 10px; font-weight: 700; color: var(--status-glyph);
 }
 .verdict__defect--ok      .verdict__defect-dot { background: var(--ok); }
 .verdict__defect--warning .verdict__defect-dot { background: var(--warning); }
@@ -281,7 +295,7 @@ select {
   flex: none;
   width: 24px; height: 24px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 13px; color: #fff;
+  font-weight: 700; font-size: 13px; color: var(--status-glyph);
 }
 .tz__item--reject      .tz__icon { background: var(--reject); }
 .tz__item--warning     .tz__icon { background: var(--warning); }
@@ -289,8 +303,8 @@ select {
 .tz__item--not_checked .tz__icon { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
 .tz__name { font-weight: 600; }
 .tz__details { color: var(--muted); font-size: 14px; }
-.tz__item--reject  .tz__details { color: var(--reject); }
-.tz__item--warning .tz__details { color: #8a6100; }
+.tz__item--reject  .tz__details { color: var(--reject-text); }
+.tz__item--warning .tz__details { color: var(--warning-text); }
 .tz__note { color: var(--muted); font-size: 12px; font-style: italic; }
 .tz__item--not_checked .tz__name { color: var(--muted); font-weight: 500; }
 
@@ -318,10 +332,10 @@ h3 { font-size: 17px; margin: 0 0 8px; }
 .camera-controls select { max-width: 260px; }
 .camera-status { color: var(--muted); }
 .camera-fps {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 500;
   padding: 3px 8px;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--accent-text);
   border-radius: var(--radius);
 }
 .camera-fps:empty { display: none; }
@@ -374,9 +388,9 @@ h3 { font-size: 17px; margin: 0 0 8px; }
   border: 1px solid var(--muted);
   color: var(--muted);
 }
-.chip--accent  { border-color: var(--accent);  color: var(--accent); }
-.chip--ok      { border-color: var(--ok);      color: var(--ok); }
-.chip--warning { border-color: var(--warning); color: #8a6100; }
+.chip--accent  { border-color: var(--accent-text); color: var(--accent-text); }
+.chip--ok      { border-color: var(--ok-text); color: var(--ok-text); }
+.chip--warning { border-color: var(--warning); color: var(--warning-text); }
 
 /* Крупные цифры — табло прибора */
 .stats { display: flex; flex-wrap: wrap; gap: 32px; margin-bottom: 10px; }
@@ -385,15 +399,15 @@ h3 { font-size: 17px; margin: 0 0 8px; }
   font-size: 11px; font-weight: 600; text-transform: uppercase;
   letter-spacing: .08em; color: var(--muted);
 }
-.stat__delta { color: var(--ok); font-family: var(--font-mono); font-size: 13px; margin-top: 2px; }
+.stat__delta { color: var(--ok-text); font-family: var(--font-mono); font-size: 13px; margin-top: 2px; }
 
 /* Таблица покрытия ТЗ */
 .table-scroll { overflow-x: auto; }
 .tz-cover-table th[scope="row"] { font-weight: 600; color: var(--text); white-space: nowrap; vertical-align: top; }
 .tz-cover { vertical-align: top; }
-.tz-cover__icon { color: var(--ok); font-weight: 700; float: left; margin-right: 8px; }
+.tz-cover__icon { color: var(--ok-text); font-weight: 700; float: left; margin-right: 8px; }
 .tz-cover--none { color: var(--muted); }
-.tz-cover__approx { color: #8a6100; font-weight: 700; cursor: help; }
+.tz-cover__approx { color: var(--warning-text); font-weight: 700; cursor: help; }
 
 /* Горизонтальные столбики mAP по классам */
 .bar-chart { display: flex; flex-direction: column; gap: 9px; }
@@ -408,17 +422,17 @@ h3 { font-size: 17px; margin: 0 0 8px; }
 .bar-row__track { position: relative; height: 12px; background: var(--bg); }
 .bar-row__fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--bar);
   border-radius: 0 3px 3px 0;   /* скругление только на конце данных */
 }
 .bar-row--weak .bar-row__fill { background: var(--warning); }
 .bar-row__threshold {
   position: absolute; top: -3px; bottom: -3px;
-  border-left: 1px dashed var(--rule);
+  border-left: 1px dashed var(--muted);   /* --rule на тёмном фоне едва виден */
 }
 .bar-row__value { font-size: 13px; min-width: 40px; }
 .bar-row:hover .bar-row__fill { filter: brightness(1.15); }
-.metrics-weak-label { color: #8a6100; font-family: var(--font-text); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.metrics-weak-label { color: var(--warning-text); font-family: var(--font-text); font-size: 12px; font-weight: 600; white-space: nowrap; }
 
 /* ---------- Уведомления (toast) ---------- */
 .toast-container {
@@ -432,7 +446,7 @@ h3 { font-size: 17px; margin: 0 0 8px; }
   border-left: 6px solid var(--accent);
   border-radius: var(--radius);
   padding: 10px 14px;
-  box-shadow: 3px 3px 0 rgba(35, 33, 29, .15);   /* жёсткая «бумажная» тень, без размытия */
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, .35);   /* жёсткая тень без размытия */
   animation: toast-in .15s ease-out;
 }
 .toast--ok    { border-left-color: var(--ok); }
