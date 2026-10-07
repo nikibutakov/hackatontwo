@@ -31,6 +31,7 @@ from . import config
 RU_LABELS = {
     "dry_joint": "непропаянный элемент",
     "short_circuit": "короткое замыкание",
+    "short": "короткое замыкание",          # имя того же класса в DeepPCB
     "incorrect_installation": "неправильная установка компонента",
     "pcb_damage": "повреждение платы",
     "open_circuit": "разрыв дорожки",

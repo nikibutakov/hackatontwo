@@ -81,6 +81,9 @@ VERDICT_RULES: dict[str, dict] = {
     # --- классы своей модели на DeepPCB ---
     "open_circuit":           {"severity": "reject", "category": "open_circuit"},  # РАЗРЫВ ДОРОЖКИ — прямое требование ТЗ
     "missing_hole":           {"severity": "reject", "category": "other"},
+    # в разметке DeepPCB (ml/pcb.yaml) короткое замыкание называется "short",
+    # у модели с HF — "short_circuit"; правило одно и то же
+    "short":                  {"severity": "reject", "category": "other"},
     "spurious_copper":        {"severity": "warning", "reject_count": 3, "reject_area_pct": 1.0, "category": "other"},
     "mouse_bite":             {"severity": "warning", "reject_count": 3, "category": "other"},
     "spur":                   {"severity": "warning", "reject_count": 3, "category": "other"},

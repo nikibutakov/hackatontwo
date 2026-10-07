@@ -24,6 +24,7 @@ const CLASS_COLORS = {
   spurious_copper: "#ff9100",
   mouse_bite: "#f50057",
   spur: "#c6ff00",
+  short: "#ffb300",   // = short_circuit: тот же дефект, другое имя в разметке DeepPCB
 };
 
 // КОРОТКИЕ русские подписи — для меток на canvas и таблицы детекций, где
@@ -39,6 +40,7 @@ const RU_LABELS = {
   spurious_copper: "лишняя медь",
   mouse_bite: "мышиный укус",
   spur: "заусенец",
+  short: "короткое замыкание",
 };
 
 function classColor(name) {
