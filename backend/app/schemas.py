@@ -26,10 +26,27 @@ class Detection(BaseModel):
     )
 
 
+class DefectGroup(BaseModel):
+    """Дефекты одного класса и решение по ним (разбор вердикта)."""
+    class_name: str
+    label: str = Field(description="Русское название класса для UI")
+    count: int
+    area_pct: Optional[float] = Field(description="Суммарная площадь в % от кадра (None — размер кадра неизвестен)")
+    status: Literal["ok", "warning", "reject"]
+    note: Optional[str] = Field(
+        default=None,
+        description="Почему warning повышен до reject (сработал порог количества/площади)",
+    )
+
+
 class Verdict(BaseModel):
     """Итоговое решение по детали."""
     status: Literal["ok", "warning", "reject"]
     reason: str = Field(description="Человекочитаемое объяснение решения")
+    defects: list[DefectGroup] = Field(
+        default_factory=list,
+        description="Разбор по классам, самые серьёзные первыми",
+    )
 
 
 class Summary(BaseModel):
