@@ -20,6 +20,7 @@ import io
 import time
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from PIL import Image
 
 from ..model_manager import manager
@@ -40,19 +41,28 @@ async def frame(image: UploadFile = File(..., description="Кадр с каме�
     except Exception:
         raise HTTPException(status_code=400, detail="Кадр не распознан как изображение")
 
+    # Инференс в пуле потоков — подробности в routers/analyze.py
+    model = manager.get_active()
     t0 = time.perf_counter()
     try:
-        raw_detections = manager.get_active().predict(pil_image)
+        raw_detections = await run_in_threadpool(model.predict, pil_image)
     except Exception as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Ошибка инференса (модель '{manager.active_id}'): {exc}",
+            detail=f"Ошибка инференса (модель '{model.model_id}'): {exc}",
         )
     elapsed_ms = int((time.perf_counter() - t0) * 1000)
 
-    smoothed = frame_smoother.process(raw_detections)
+    # Пока кадр считался, модель могли переключить (и сглаживатель уже
+    # сброшен). Детекции старой модели в новое состояние не пускаем.
+    if model.model_id != manager.active_id:
+        smoothed = []
+    else:
+        # smoother вызывается в event loop (не в потоке) — он быстрый,
+        # и так к его состоянию никогда не обращаются два потока сразу.
+        smoothed = frame_smoother.process(raw_detections)
     return FrameResponse(
-        model=manager.active_id,
+        model=model.model_id,
         time_ms=elapsed_ms,
         detections=[Detection(**det) for det in smoothed],
     )

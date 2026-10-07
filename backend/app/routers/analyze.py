@@ -17,6 +17,7 @@ import io
 import time
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from PIL import Image
 
 from .. import config
@@ -39,14 +40,21 @@ async def analyze(image: UploadFile = File(..., description="Изображен�
     except Exception:
         raise HTTPException(status_code=400, detail="Файл не является изображением (JPEG/PNG)")
 
-    # 2. Инференс активной моделью
+    # 2. Инференс активной моделью.
+    # predict() — синхронный и тяжёлый (сотни мс). Вызванный прямо в async-
+    # функции, он заморозил бы event loop: сервер не отвечал бы НИКОМУ
+    # (ни /api/health, ни камере) до конца инференса. run_in_threadpool
+    # уносит его в отдельный поток, а event loop продолжает обслуживать запросы.
+    # Модель берём один раз: если во время инференса её переключат,
+    # в ответе всё равно будет id той, что реально считала.
+    model = manager.get_active()
     t0 = time.perf_counter()
     try:
-        raw_detections = manager.get_active().predict(pil_image)
+        raw_detections = await run_in_threadpool(model.predict, pil_image)
     except Exception as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Ошибка инференса (модель '{manager.active_id}'): {exc}. "
+            detail=f"Ошибка инференса (модель '{model.model_id}'): {exc}. "
                    f"Проверьте, скачаны ли веса (ml/README.md) и установлены ли ml-зависимости.",
         )
     elapsed_ms = int((time.perf_counter() - t0) * 1000)
@@ -57,7 +65,7 @@ async def analyze(image: UploadFile = File(..., description="Изображен�
 
     # 4. Формируем ответ по схеме
     return AnalyzeResponse(
-        model=manager.active_id,
+        model=model.model_id,
         time_ms=elapsed_ms,
         image_size={"width": pil_image.size[0], "height": pil_image.size[1]},
         detections=[Detection(**det) for det in raw_detections],
