@@ -16,13 +16,12 @@
 #    миллисекунд здесь это FPS демо.
 # ============================================================
 
-import io
 import time
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from PIL import Image
 
+from ..images import InvalidImageError, decode_image
 from ..model_manager import manager
 from ..schemas import Detection, FrameResponse
 from ..smoothing import frame_smoother
@@ -33,13 +32,11 @@ router = APIRouter(prefix="/api", tags=["live"])
 @router.post("/frame", response_model=FrameResponse)
 async def frame(image: UploadFile = File(..., description="Кадр с камеры (JPEG)")):
     """Анализ одного кадра потока: сглаженные детекции, минимум лишнего."""
-    raw = await image.read()
-    if not raw:
-        raise HTTPException(status_code=400, detail="Пустой файл")
+    # кадры с canvas идут без EXIF — поворот в decode_image для них ничего не стоит
     try:
-        pil_image = Image.open(io.BytesIO(raw)).convert("RGB")
-    except Exception:
-        raise HTTPException(status_code=400, detail="Кадр не распознан как изображение")
+        pil_image = decode_image(await image.read())
+    except InvalidImageError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     # Инференс в пуле потоков — подробности в routers/analyze.py
     model = manager.get_active()

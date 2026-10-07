@@ -5,22 +5,22 @@
 # загрузка файла -> инференс -> сводка -> вердикт.
 # Основной endpoint вкладки "Фото".
 #
+# Ошибки: 400 — пустой файл / не изображение, 503 — модель не загрузилась
+# или упала на инференсе (в detail — причина и подсказка).
+# Фото с телефона поворачиваются по EXIF (см. images.py).
+#
 # ЧТО СДЕЛАТЬ (TODO):
-# 1. Обработка ошибок: сейчас минимальная. Добавьте понятные
-#    сообщения (не-изображение, пустой файл, модель не загрузилась).
-# 2. Опционально: сохранение истории анализов (для этого появится
+# 1. Опционально: сохранение истории анализов (для этого появится
 #    endpoint GET /api/history) — только если останется время,
 #    это НЕ критично для демо.
 # ============================================================
 
-import io
 import time
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from PIL import Image
 
-from .. import config
+from ..images import InvalidImageError, decode_image
 from ..model_manager import manager
 from ..schemas import AnalyzeResponse, Detection, Summary, TzCheckItem, Verdict
 from ..verdict import build_summary, build_tz_checklist, build_verdict
@@ -31,14 +31,11 @@ router = APIRouter(prefix="/api", tags=["analyze"])
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze(image: UploadFile = File(..., description="Изображение платы (JPEG/PNG)")):
     """Полный анализ одного изображения: детекции + сводка + вердикт."""
-    # 1. Читаем и валидируем изображение
-    raw = await image.read()
-    if not raw:
-        raise HTTPException(status_code=400, detail="Пустой файл")
+    # 1. Читаем и валидируем изображение (с поворотом по EXIF)
     try:
-        pil_image = Image.open(io.BytesIO(raw)).convert("RGB")
-    except Exception:
-        raise HTTPException(status_code=400, detail="Файл не является изображением (JPEG/PNG)")
+        pil_image = decode_image(await image.read())
+    except InvalidImageError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     # 2. Инференс активной моделью.
     # predict() — синхронный и тяжёлый (сотни мс). Вызванный прямо в async-
