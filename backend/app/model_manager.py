@@ -106,10 +106,13 @@ class YoloModel(BasePcbModel):
     """Настоящая модель: ultralytics YOLOv8/v11 (детекция или сегментация).
     ultralytics импортируется ЛЕНИВО — без него сервер работает в Mock-режиме."""
 
-    def __init__(self, model_id: str, weights_path, model_type: str):
+    def __init__(self, model_id: str, weights_path, model_type: str, imgsz: int | None = None):
         self.model_id = model_id
         self.model_type = model_type
         self.weights_path = str(weights_path)
+        # размер входа при инференсе — из реестра; должен совпадать с тем,
+        # на котором модель обучалась (наша PKU-модель — 960, остальные — 640)
+        self.input_size = imgsz or config.INPUT_SIZE
         self._model = None  # ленивая загрузка при первом predict
         self._load_error: Optional[str] = None
         # Инференс идёт в пуле потоков (см. routers/analyze.py), а модель
@@ -152,7 +155,7 @@ class YoloModel(BasePcbModel):
                 image,
                 conf=config.CONF_THRESHOLD,
                 iou=config.IOU_THRESHOLD,
-                imgsz=config.INPUT_SIZE,
+                imgsz=self.input_size,
                 verbose=False,
             )[0]
         elapsed_ms = int((time.perf_counter() - t0) * 1000)
@@ -169,8 +172,12 @@ class YoloModel(BasePcbModel):
 
         for i in range(len(boxes)):
             x1, y1, x2, y2 = [float(v) for v in boxes[i]]
+            # имена классов нормализуются в канонические (см. config.CLASS_ALIASES):
+            # разные модели называют одни дефекты по-разному, а вердикты и
+            # фронтенд ждут единый набор имён
+            raw_name = str(names[int(result.boxes.cls[i])])
             detections.append({
-                "class_name": str(names[int(result.boxes.cls[i])]),
+                "class_name": config.CLASS_ALIASES.get(raw_name, raw_name),
                 "confidence": round(float(confs[i]), 3),
                 "bbox": [round(x1, 1), round(y1, 1), round(x2, 1), round(y2, 1)],
                 "polygon": [[float(x), float(y)] for x, y in polygons[i]] if polygons is not None else None,
@@ -193,7 +200,7 @@ class ModelManager:
         else:
             for entry in config.MODEL_REGISTRY:
                 path = config.PROJECT_ROOT / entry["path"]
-                model = YoloModel(entry["id"], path, entry["type"])
+                model = YoloModel(entry["id"], path, entry["type"], imgsz=entry.get("imgsz"))
                 self._register(model, {"type": entry["type"], "description": entry.get("description", "")})
             self.active_id = config.ACTIVE_MODEL
 
