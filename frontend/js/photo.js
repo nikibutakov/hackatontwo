@@ -11,10 +11,9 @@
 //   - наведение на строку таблицы перерисовывает canvas с выделенной
 //     детекцией (остальные приглушены);
 //   - блок «Проверка по ТЗ» — чек-лист по пунктам задания 4 из
-//     result.tz_checklist (состояния считает бэкенд, см. verdict.py).
-//
-// ЧТО СДЕЛАТЬ (TODO):
-// 1. Кнопка «Загрузить пример» с картинками из ml/data (удобно для репетиции демо).
+//     result.tz_checklist (состояния считает бэкенд, см. verdict.py);
+//   - «Примеры» — миниатюры картинок из папки examples/ (GET /api/examples);
+//     клик скачивает картинку и прогоняет её через тот же analyzeFile.
 // ============================================================
 
 const photoTab = (() => {
@@ -31,6 +30,8 @@ const photoTab = (() => {
   const metaLine = document.getElementById("photo-meta");
   const tzBox = document.getElementById("photo-tz");
   const tzList = document.getElementById("photo-tz-list");
+  const examplesBox = document.getElementById("photo-examples");
+  const examplesList = document.getElementById("photo-examples-list");
 
   const STATUS_TEXT = { ok: "ГОДЕН", warning: "ПРЕДУПРЕЖДЕНИЕ", reject: "БРАК" };
   // Значок и подпись состояния пункта ТЗ
@@ -166,6 +167,38 @@ const photoTab = (() => {
     });
   }
 
+  // ---- примеры из папки examples/ ----
+  async function loadExamples() {
+    let examples = [];
+    try {
+      examples = await apiGetExamples();
+    } catch (_) { /* нет примеров или API недоступен — блок просто не показываем */ }
+    examplesBox.hidden = examples.length === 0;
+    examplesList.innerHTML = "";
+    for (const ex of examples) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "example";
+      button.title = `Проанализировать ${ex.name} (${ex.size_kb} КБ)`;
+      button.innerHTML = `<img src="${exampleUrl(ex.name)}" alt="" loading="lazy">
+                          <span>${escapeHtml(ex.name)}</span>`;
+      button.addEventListener("click", () => analyzeExample(ex.name));
+      examplesList.appendChild(button);
+    }
+  }
+
+  async function analyzeExample(name) {
+    try {
+      const response = await fetch(exampleUrl(name));
+      if (!response.ok) throw new Error(response.status + " " + response.statusText);
+      const blob = await response.blob();
+      // тот же путь, что у файла с диска: File с именем -> analyzeFile
+      await analyzeFile(new File([blob], name, { type: blob.type }));
+    } catch (err) {
+      showToast(`Не удалось загрузить пример ${name}: ${err.message}`, "error");
+    }
+  }
+
   // ---- события ----
   fileInput.addEventListener("change", () => {
     if (fileInput.files.length) analyzeFile(fileInput.files[0]);
@@ -186,5 +219,7 @@ const photoTab = (() => {
     if (e.dataTransfer.files.length) analyzeFile(e.dataTransfer.files[0]);
   });
 
-  return { analyzeFile };
+  loadExamples();
+
+  return { analyzeFile, loadExamples };
 })();

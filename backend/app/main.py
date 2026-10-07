@@ -29,7 +29,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import config
 from .model_manager import manager
-from .routers import analyze, live, metrics, models
+from .routers import analyze, examples, live, metrics, models
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s: %(message)s")
 
@@ -81,6 +81,7 @@ app.include_router(analyze.router)
 app.include_router(live.router)
 app.include_router(models.router)
 app.include_router(metrics.router)
+app.include_router(examples.router)
 
 
 # Фронтенд — статикой из ../frontend, html=True означает "отдавать index.html на /"

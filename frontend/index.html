@@ -44,14 +44,20 @@
   <section id="tab-photo" class="tab-content tab-content--active">
     <div class="layout-two-col">
       <div class="col-left">
-        <!-- TODO [Frontend]: зона загрузки работает, но оформление (иконка,
-             подсказка форматов, состояние drag-over) — довести до ума -->
+        <!-- Зона загрузки: перетаскивание или выбор файла; во время анализа —
+             класс dropzone--busy (полоса загрузки) -->
         <div id="dropzone" class="dropzone">
           <p>Перетащите фото платы сюда<br>или</p>
           <label class="btn btn--file">
             Выбрать файл
             <input type="file" id="photo-input" accept="image/*" hidden>
           </label>
+        </div>
+        <!-- Примеры из папки examples/ (GET /api/examples): клик — анализ.
+             Блок скрыт, пока в папке нет картинок -->
+        <div id="photo-examples" class="examples" hidden>
+          <span class="examples__title">Примеры:</span>
+          <div id="photo-examples-list" class="examples__list"></div>
         </div>
         <div class="canvas-wrap">
           <canvas id="photo-canvas"></canvas>

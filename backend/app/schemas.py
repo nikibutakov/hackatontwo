@@ -102,6 +102,12 @@ class ModelInfo(BaseModel):
     )
 
 
+class ExampleInfo(BaseModel):
+    """Пример фото платы из папки examples/ (GET /api/examples)."""
+    name: str = Field(description="Имя файла; картинка — GET /api/examples/{name}")
+    size_kb: int
+
+
 class MetricsResponse(BaseModel):
     """Ответ GET /api/metrics — содержимое ml/metrics.json + справочники для UI."""
     models: dict[str, dict] = Field(description="ml/metrics.json -> models, как есть")

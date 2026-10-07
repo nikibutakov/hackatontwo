@@ -111,6 +111,26 @@ body {
 }
 @keyframes busy-bar { to { left: 100%; } }
 
+/* Примеры фото (миниатюры под зоной загрузки) */
+.examples { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.examples__title { color: var(--muted); font-size: 14px; flex: none; }
+.examples__list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.example {
+  flex: none;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 104px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.example:hover { border-color: var(--accent); color: var(--text); }
+.example img { width: 94px; height: 64px; object-fit: cover; border-radius: 4px; background: #000; }
+.example span { max-width: 94px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .canvas-wrap {
   position: relative;
   margin-top: 16px;
