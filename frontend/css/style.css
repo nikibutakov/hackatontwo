@@ -215,15 +215,76 @@ body {
 }
 
 /* ---------- Вкладка «Метрики» ---------- */
-.metrics-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.metrics-container { display: block; }
+.metrics-section { margin-bottom: 28px; }
+.metrics-section__title { font-size: 18px; margin: 0 0 12px; }
+.metrics-models { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.metrics-banner {
+  background: rgba(243, 156, 18, .12);
+  border: 1px solid var(--warning);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
 .metric-card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 18px 20px;
 }
-.metric-card h3 { margin-top: 0; }
-.metric-card .placeholder-note { color: var(--warning); font-size: 13px; }
+.metric-card h3 { margin: 0 0 8px; }
+.metric-card__chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+
+/* Пометки-«чипы» */
+.chip {
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.chip--accent  { border-color: var(--accent);  color: var(--accent); }
+.chip--ok      { border-color: var(--ok);      color: var(--ok); }
+.chip--warning { border-color: var(--warning); color: var(--warning); }
+
+/* Крупные цифры (stat tile) */
+.stats { display: flex; flex-wrap: wrap; gap: 28px; margin-bottom: 10px; }
+.stat__value { font-size: 36px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat__label { color: var(--muted); font-size: 13px; }
+.stat__delta { color: var(--text); font-size: 13px; margin-top: 2px; }
+
+/* Таблица покрытия ТЗ */
+.table-scroll { overflow-x: auto; }
+.tz-cover-table th[scope="row"] { font-weight: 600; color: var(--text); white-space: nowrap; vertical-align: top; }
+.tz-cover { vertical-align: top; }
+.tz-cover__icon { color: var(--ok); font-weight: 700; float: left; margin-right: 8px; }
+.tz-cover--none { color: var(--muted); }
+.tz-cover__approx { color: var(--warning); font-weight: 700; cursor: help; }
+
+/* Горизонтальные столбики mAP по классам */
+.bar-chart { display: flex; flex-direction: column; gap: 10px; }
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 38%) 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.bar-row__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row__track { position: relative; height: 12px; }
+.bar-row__fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 0 4px 4px 0;   /* скругление только на конце данных */
+}
+.bar-row--weak .bar-row__fill { background: var(--warning); }
+.bar-row__threshold {
+  position: absolute; top: -3px; bottom: -3px;
+  border-left: 1px dashed var(--muted);
+}
+.bar-row__value { font-variant-numeric: tabular-nums; min-width: 40px; }
+.bar-row:hover .bar-row__fill { filter: brightness(1.2); }
+.metrics-weak-label { color: var(--warning); font-size: 12px; white-space: nowrap; }
 
 /* ---------- Уведомления (toast) ---------- */
 .toast-container {
