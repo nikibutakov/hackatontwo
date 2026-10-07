@@ -1,18 +1,45 @@
 {
   "models": {
     "hf-keremberke-yolov8m-seg": {
-      "name": "YOLOv8m-seg (бейзлайн Hugging Face)",
+      "name": "YOLOv8m-seg · бейзлайн Hugging Face (сегментация)",
       "baseline": true,
       "map50_box": 0.568,
       "map50_mask": 0.557,
       "dataset": "keremberke/pcb-defect-segmentation (189 фото)",
+      "source": "метрики автора с карточки модели",
+      "placeholder": false
+    },
+    "hf-janani-deeppcb-yolov8s": {
+      "name": "YOLOv8s · Janani-V, DeepPCB",
+      "baseline": true,
+      "map50_box": 0.985,
+      "dataset": "DeepPCB (1200 фото, полутоновые вырезки)",
       "per_class": {
-        "dry_joint": 0.60,
-        "short_circuit": 0.55,
-        "incorrect_installation": 0.57,
-        "pcb_damage": 0.52
+        "spurious_copper": 0.994, "mouse_bite": 0.982, "open_circuit": 0.983,
+        "missing_hole": 0.993, "short": 0.970, "spur": 0.988
       },
-      "placeholder": true
+      "source": "метрики автора с карточки модели (валидация в домене датасета)",
+      "placeholder": false
+    },
+    "hf-janani-dspcbsd-yolov8m": {
+      "name": "YOLOv8m · Janani-V, DsPCBSD+",
+      "baseline": true,
+      "map50_box": 0.839,
+      "dataset": "DsPCBSD+ (10259 фото, 9 классов, RGB-фрагменты)",
+      "source": "метрики автора с карточки модели",
+      "placeholder": false
+    },
+    "pku-yolov8s-ours": {
+      "name": "YOLOv8s · НАША, дообучена на PKU-Market-PCB-corrected",
+      "baseline": false,
+      "map50_box": 0.943,
+      "dataset": "PKU-Market-PCB-corrected (693 фото, board-disjoint сплит: валидация на невиданных платах)",
+      "per_class": {
+        "missing_hole": 0.936, "mouse_bite": 0.953, "open_circuit": 0.977,
+        "short": 0.930, "spur": 0.884, "spurious_copper": 0.975
+      },
+      "source": "наша финальная валидация best.pt",
+      "placeholder": false
     }
   }
 }

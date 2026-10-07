@@ -31,6 +31,8 @@ def parse_args():
     parser.add_argument("--model-size", default="s", choices=["n", "s", "m"],
                         help="размер модели: n (быстрее) / s (баланс) / m (точнее)")
     parser.add_argument("--epochs", type=int, default=80, help="число эпох (60-100)")
+    parser.add_argument("--data", default="ml/pcb.yaml", help="путь к yaml датасета (от корня проекта)")
+    parser.add_argument("--batch", type=int, default=16, help="размер батча; уменьшить при нехватке видеопамяти")
     parser.add_argument("--imgsz", type=int, default=640, help="размер входа")
     parser.add_argument("--device", default="", help="0 = GPU, cpu = процессор (пусто = авто)")
     parser.add_argument("--resume", action="store_true", help="продолжить прерванное обучение")
@@ -42,17 +44,18 @@ def main():
 
     args = parse_args()
 
-    if not DATASET_YAML.exists():
-        raise SystemExit(f"Не найден {DATASET_YAML} — сначала настройте его по ml/README.md")
+    data_path = Path(args.data)
+    if not data_path.exists():
+        raise SystemExit(f"Не найден {data_path.resolve()} — проверьте путь")
 
     base_weights = f"yolov8{args.model_size}.pt"  # предобученные веса COCO
     model = YOLO(base_weights)
 
     train_kwargs = dict(
-        data=str(DATASET_YAML),
+        data=args.data,
         epochs=args.epochs,
         imgsz=args.imgsz,
-        batch=16,
+        batch=args.batch,
         # аугментации: датасет «микроскопный», а камера даёт другие условия света
         hsv_v=0.4,        # сильнее варьируем яркость
         degrees=10,       # лёгкие повороты
@@ -65,9 +68,13 @@ def main():
     if args.device:
         train_kwargs["device"] = args.device
     if args.resume:
-        model = YOLO(str(PROJECT_ROOT / "ml" / "runs" / "pcb_train" / "weights" / "last.pt"))
-
-    results = model.train(**train_kwargs)
+        last = PROJECT_ROOT / "ml" / "runs" / "pcb_train" / "weights" / "last.pt"
+        model = YOLO(str(last))
+        model.train(resume=True)  # честное продолжение: эпохи, оптимизатор, LR — из чекпойнта
+    else:
+        base_weights = f"yolov8{args.model_size}.pt"  # предобученные веса COCO
+        model = YOLO(base_weights)
+        results = model.train(**train_kwargs)
 
     # забираем лучшие веса в стандартное место
     WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)

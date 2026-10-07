@@ -23,30 +23,25 @@ import argparse
 import shutil
 from pathlib import Path
 
-REPO_ID = "keremberke/yolov8m-pcb-defect-segmentation"
-FILENAME = "best.pt"
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-TARGET = PROJECT_ROOT / "ml" / "weights" / "hf_yolov8m_seg.pt"
 
-
-def download():
+def download(repo_id: str, out_path: Path):
     from huggingface_hub import hf_hub_download
-    TARGET.parent.mkdir(parents=True, exist_ok=True)
-    print(f"Скачиваю {REPO_ID}/{FILENAME} ...")
-    local_path = hf_hub_download(repo_id=REPO_ID, filename=FILENAME)
-    shutil.copy(local_path, TARGET)
-    print(f"Готово: {TARGET}")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Скачиваю {repo_id}/best.pt ...")
+    local_path = hf_hub_download(repo_id=repo_id, filename="best.pt")
+    shutil.copy(local_path, out_path)
+    print(f"Готово: {out_path}")
 
 
-def check():
+def check(out_path: Path):
     """Проверка: открываются ли веса текущей версией ultralytics + один инференс."""
     from ultralytics import YOLO
     from PIL import Image
     import numpy as np
 
-    print(f"Загружаю {TARGET} ...")
-    model = YOLO(str(TARGET))
+    print(f"Загружаю {out_path} ...")
+    model = YOLO(str(out_path))
     print(f"Задача: {model.task}")
     dummy = Image.fromarray(np.zeros((480, 640, 3), dtype=np.uint8))
     result = model.predict(dummy, verbose=False)[0]
@@ -56,10 +51,19 @@ def check():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Скачивание и проверка моделей с HF")
+    parser.add_argument("--repo", help="id репозитория HF")
+    parser.add_argument("--out", required=True, help="куда сохранять веса (от корня проекта)")
     parser.add_argument("--check", action="store_true", help="проверить веса инференсом")
+    
     args = parser.parse_args()
-    if args.check:
-        check()
+
+    out_path = Path(args.out)
+    if not args.repo and not args.check:
+        parser.error("нечего делать: укажите --repo (скачать) и/или --check (проверить)")
+
+    if args.repo:
+        download(args.repo, out_path)   # скачать
+        check(out_path)                 # и сразу проверить свежескачанное
     else:
-        download()
+        check(out_path)                 # только проверить уже лежащий файл

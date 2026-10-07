@@ -26,3 +26,6 @@ Thumbs.db
 
 # Логи
 *.log
+
+# ML-окружение (venv с torch, несколько ГБ)
+.venv-ml/
