@@ -63,11 +63,12 @@
         <div id="photo-verdict" class="verdict verdict--hidden">
           <span id="photo-verdict-status" class="verdict__status"></span>
           <p id="photo-verdict-reason" class="verdict__reason"></p>
+          <!-- Разбор по классам из verdict.defects (статус, количество, площадь) -->
+          <ul id="photo-verdict-defects" class="verdict__defects"></ul>
         </div>
         <h3>Детекции</h3>
-        <!-- TODO [Frontend]: таблица наполняется в js/photo.js.
-             Приятное улучшение — подсветка строки при наведении
-             и рамки соответствующего цвета у класса (цвета в js/shared.js) -->
+        <!-- Таблица наполняется в js/photo.js. Наведение на строку
+             подсвечивает соответствующую детекцию на изображении -->
         <table class="detections-table">
           <thead>
             <tr><th>Класс</th><th>Уверенность</th><th>Рамка (x1, y1, x2, y2)</th></tr>

@@ -100,6 +100,16 @@ body {
   transition: border-color .2s;
 }
 .dropzone--over { border-color: var(--accent); color: var(--text); }
+/* идёт анализ: зона приглушена, курсор "ожидание", бегущая полоса снизу */
+.dropzone--busy { opacity: .6; cursor: progress; position: relative; overflow: hidden; }
+.dropzone--busy::after {
+  content: "";
+  position: absolute; left: -40%; bottom: 0;
+  width: 40%; height: 3px;
+  background: var(--accent);
+  animation: busy-bar 1s linear infinite;
+}
+@keyframes busy-bar { to { left: 100%; } }
 
 .canvas-wrap {
   position: relative;
@@ -138,6 +148,15 @@ body {
 .verdict--reject  { background: rgba(231, 76, 60, .12); border: 1px solid var(--reject); }
 .verdict--reject  .verdict__status { color: var(--reject); }
 
+/* Разбор вердикта по классам */
+.verdict__defects { list-style: none; margin: 12px 0 0; padding: 0; }
+.verdict__defect { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 14px; }
+.verdict__defect-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.verdict__defect--ok      .verdict__defect-dot { background: var(--ok); }
+.verdict__defect--warning .verdict__defect-dot { background: var(--warning); }
+.verdict__defect--reject  .verdict__defect-dot { background: var(--reject); }
+.verdict__defect-meta { color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+
 /* Таблица детекций */
 .detections-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .detections-table th, .detections-table td {
@@ -146,6 +165,8 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .detections-table th { color: var(--muted); font-weight: 600; }
+.detections-table__row { cursor: default; }
+.detections-table__row:hover { background: rgba(61, 139, 253, .12); }
 
 .meta-line { color: var(--muted); font-size: 13px; }
 
