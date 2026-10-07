@@ -3,10 +3,14 @@
 // ЧТО ЗДЕСЬ: инициализация страницы — переключение вкладок,
 // переключатель моделей в шапке, индикатор живости API.
 //
+// Уход с вкладки «Камера» останавливает поток: иначе он невидимо
+// продолжал бы грузить сервер и держать камеру включённой.
+// Переключение модели: селектор блокируется на время загрузки весов,
+// результат — во всплывающем уведомлении; при ошибке селектор
+// возвращается на модель, которая реально осталась активной.
+//
 // ЧТО СДЕЛАТЬ (TODO):
-// 1. При переключении модели во время активного потока камеры —
-//    предупредить, что первое время инференс будет паузой (грузятся веса).
-// 2. Индикатор: зелёный = API жив, красный = недоступен (уже опрашивает
+// 1. Индикатор: зелёный = API жив, красный = недоступен (уже опрашивает
 //    /api/health каждые 10 секунд — проверьте порог на практике).
 // ============================================================
 
@@ -15,6 +19,7 @@
   const tabs = document.querySelectorAll(".tab");
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
+      if (tab.dataset.tab !== "camera" && cameraTab.isRunning()) cameraTab.stop();
       tabs.forEach((t) => t.classList.remove("tab--active"));
       document.querySelectorAll(".tab-content").forEach((c) =>
         c.classList.remove("tab-content--active"));
@@ -30,30 +35,41 @@
   // ---- Переключатель моделей ----
   const modelSelect = document.getElementById("model-select");
 
+  function renderModels(models) {
+    modelSelect.innerHTML = "";
+    for (const m of models) {
+      const option = document.createElement("option");
+      option.value = m.id;
+      option.textContent = m.id + (m.type === "segmentation" ? " (сегм.)" :
+                                   m.type === "detection" ? " (детекция)" : "") +
+                           (m.error ? " ⚠" : "");
+      if (m.error) option.title = "Ошибка загрузки: " + m.error;
+      option.selected = m.active;
+      modelSelect.appendChild(option);
+    }
+  }
+
   async function refreshModels() {
     try {
-      const models = await apiGetModels();
-      modelSelect.innerHTML = "";
-      for (const m of models) {
-        const option = document.createElement("option");
-        option.value = m.id;
-        option.textContent = m.id + (m.type === "segmentation" ? " (сегм.)" :
-                                     m.type === "detection" ? " (детекция)" : "");
-        option.selected = m.active;
-        modelSelect.appendChild(option);
-      }
+      renderModels(await apiGetModels());
     } catch (_) {
       modelSelect.innerHTML = `<option>недоступно</option>`;
     }
   }
 
   modelSelect.addEventListener("change", async () => {
+    const modelId = modelSelect.value;
+    modelSelect.disabled = true;
+    showToast(`Загружаю модель ${modelId}…`, "info", 2500);
     try {
-      await apiActivateModel(modelSelect.value);
-      // после переключения список придёт с новой активной моделью
-      await refreshModels();
+      // ответ — уже обновлённый список с новой активной моделью
+      renderModels(await apiActivateModel(modelId));
+      showToast(`Активна модель ${modelId}`, "ok");
     } catch (err) {
-      alert("Не удалось переключить модель: " + err.message);
+      showToast("Не удалось переключить модель: " + err.message, "error", 7000);
+      await refreshModels(); // вернуть селектор на реально активную модель
+    } finally {
+      modelSelect.disabled = false;
     }
   });
 

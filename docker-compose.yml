@@ -13,8 +13,9 @@ services:
     volumes:
       - ./ml/weights:/app/ml/weights       # скачанные/обученные веса
       - ./ml/metrics.json:/app/ml/metrics.json
+      - ./examples:/app/examples           # примеры фото для вкладки «Фото»
     environment:
-      # Когда веса лежат в ml/weights — переключитесь в false
+      # Когда веса лежат в ml/weights — переключитесь в false.
+      # Пути к весам задаются в backend/app/config.py (MODEL_REGISTRY).
       - USE_MOCK=true
-      - MODEL_PATH=/app/ml/weights/hf_yolov8m_seg.pt
     restart: unless-stopped

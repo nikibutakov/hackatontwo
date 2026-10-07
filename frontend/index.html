@@ -44,14 +44,20 @@
   <section id="tab-photo" class="tab-content tab-content--active">
     <div class="layout-two-col">
       <div class="col-left">
-        <!-- TODO [Frontend]: зона загрузки работает, но оформление (иконка,
-             подсказка форматов, состояние drag-over) — довести до ума -->
+        <!-- Зона загрузки: перетаскивание или выбор файла; во время анализа —
+             класс dropzone--busy (полоса загрузки) -->
         <div id="dropzone" class="dropzone">
           <p>Перетащите фото платы сюда<br>или</p>
           <label class="btn btn--file">
             Выбрать файл
             <input type="file" id="photo-input" accept="image/*" hidden>
           </label>
+        </div>
+        <!-- Примеры из папки examples/ (GET /api/examples): клик — анализ.
+             Блок скрыт, пока в папке нет картинок -->
+        <div id="photo-examples" class="examples" hidden>
+          <span class="examples__title">Примеры:</span>
+          <div id="photo-examples-list" class="examples__list"></div>
         </div>
         <div class="canvas-wrap">
           <canvas id="photo-canvas"></canvas>
@@ -63,11 +69,18 @@
         <div id="photo-verdict" class="verdict verdict--hidden">
           <span id="photo-verdict-status" class="verdict__status"></span>
           <p id="photo-verdict-reason" class="verdict__reason"></p>
+          <!-- Разбор по классам из verdict.defects (статус, количество, площадь) -->
+          <ul id="photo-verdict-defects" class="verdict__defects"></ul>
+        </div>
+        <!-- Чек-лист по пунктам задания 4 (tz_checklist из /api/analyze):
+             ❌/⚠ найдено, ✅ проверено — чисто, — модель этот пункт не проверяет -->
+        <div id="photo-tz" class="tz" hidden>
+          <h3 class="tz__title">Проверка по ТЗ</h3>
+          <ul id="photo-tz-list" class="tz__list"></ul>
         </div>
         <h3>Детекции</h3>
-        <!-- TODO [Frontend]: таблица наполняется в js/photo.js.
-             Приятное улучшение — подсветка строки при наведении
-             и рамки соответствующего цвета у класса (цвета в js/shared.js) -->
+        <!-- Таблица наполняется в js/photo.js. Наведение на строку
+             подсвечивает соответствующую детекцию на изображении -->
         <table class="detections-table">
           <thead>
             <tr><th>Класс</th><th>Уверенность</th><th>Рамка (x1, y1, x2, y2)</th></tr>
@@ -84,6 +97,15 @@
     <div class="camera-warning" id="camera-warning" hidden></div>
     <div class="camera-controls">
       <button id="camera-start" class="btn btn--primary">Запустить камеру</button>
+      <!-- Список камер наполняется после первого разрешения доступа
+           (до него браузер не отдаёт названия устройств) -->
+      <select id="camera-device" title="Выбор камеры" hidden></select>
+      <!-- Запасной режим: тот же пайплайн, источник — локальный ролик.
+           Работает без камеры и без HTTPS -->
+      <label class="btn">
+        Видео-файл…
+        <input type="file" id="camera-video-file" accept="video/*" hidden>
+      </label>
       <button id="camera-stop" class="btn" disabled>Остановить</button>
       <span id="camera-status" class="camera-status">Камера не запущена</span>
       <span id="camera-fps" class="camera-fps"></span>
@@ -103,14 +125,16 @@
 
   <!-- ==================== ВКЛАДКА «МЕТРИКИ» ==================== -->
   <section id="tab-metrics" class="tab-content">
-    <!-- TODO [Frontend]: сейчас контейнер пустой, наполняется в js/metrics.js.
-         Идея: карточка на каждую модель — общий mAP@0.5 (box/mask),
-         таблица per-class, бейдж "бейзлайн HF" vs "наша модель" -->
+    <!-- Наполняется в js/metrics.js: карточки моделей с mAP@0.5,
+         таблица покрытия пунктов ТЗ, столбики mAP по классам -->
     <div id="metrics-container" class="metrics-container">
       <p class="empty-hint">Загрузка метрик…</p>
     </div>
   </section>
 </main>
+
+<!-- Всплывающие уведомления (showToast в js/shared.js) вместо alert() -->
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
 
 <footer class="footer">
   Хакатон «Осень 2026» · Задание 4 · PCB Defect Inspector

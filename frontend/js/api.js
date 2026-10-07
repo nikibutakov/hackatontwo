@@ -60,6 +60,16 @@ async function apiGetMetrics() {
   return apiFetch("/metrics");
 }
 
+/** GET /api/examples — список примеров фото из папки examples/. */
+async function apiGetExamples() {
+  return apiFetch("/examples");
+}
+
+/** Адрес картинки-примера (для <img src> и fetch). */
+function exampleUrl(name) {
+  return API_BASE + "/examples/" + encodeURIComponent(name);
+}
+
 /** GET /api/health — живость API. */
 async function apiGetHealth() {
   return apiFetch("/health");
