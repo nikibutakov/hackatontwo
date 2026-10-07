@@ -108,7 +108,7 @@ function drawDetections(ctx, detections, scale = 1, options = {}) {
     }
 
     // подпись: над рамкой, а если рамка у верхнего края — внутри неё
-    ctx.font = `${fontSize}px 'Segoe UI', sans-serif`;
+    ctx.font = `500 ${fontSize}px 'Golos Text', 'Segoe UI', sans-serif`;
     const padding = Math.round(5 * px);
     const boxHeight = fontSize + padding * 2;
     const textWidth = ctx.measureText(label).width;

@@ -34,6 +34,9 @@ const photoTab = (() => {
   const examplesList = document.getElementById("photo-examples-list");
 
   const STATUS_TEXT = { ok: "ГОДЕН", warning: "ПРЕДУПРЕЖДЕНИЕ", reject: "БРАК" };
+  // Значок статуса группы в разборе вердикта: форма дублирует цвет
+  // (зелёный и янтарный при дальтонизме различаются плохо)
+  const STATUS_ICON = { ok: "✓", warning: "!", reject: "✖" };
   // Значок и подпись состояния пункта ТЗ
   const TZ_STATE = {
     reject:      { icon: "✖", text: "найдено" },
@@ -120,7 +123,7 @@ const photoTab = (() => {
       const parts = [`×${g.count}`];
       if (g.area_pct !== null && g.area_pct !== undefined) parts.push(`${String(g.area_pct).replace(".", ",")}% площади`);
       return `<li class="verdict__defect verdict__defect--${escapeHtml(g.status)}">
-                <span class="verdict__defect-dot"></span>
+                <span class="verdict__defect-dot" title="${escapeHtml(STATUS_TEXT[g.status] || g.status)}">${STATUS_ICON[g.status] || ""}</span>
                 <span>${escapeHtml(g.label)}</span>
                 <span class="verdict__defect-meta">${parts.join(" · ")}</span>
               </li>`;
