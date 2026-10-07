@@ -1,0 +1,18 @@
+{
+  "models": {
+    "hf-keremberke-yolov8m-seg": {
+      "name": "YOLOv8m-seg (бейзлайн Hugging Face)",
+      "baseline": true,
+      "map50_box": 0.568,
+      "map50_mask": 0.557,
+      "dataset": "keremberke/pcb-defect-segmentation (189 фото)",
+      "per_class": {
+        "dry_joint": 0.60,
+        "short_circuit": 0.55,
+        "incorrect_installation": 0.57,
+        "pcb_damage": 0.52
+      },
+      "placeholder": true
+    }
+  }
+}

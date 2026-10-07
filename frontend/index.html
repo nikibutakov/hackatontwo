@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!-- ============================================================
+  РОЛЬ: Frontend-разработчик (главный файл для него)
+  ЧТО ЗДЕСЬ: каркас страницы с тремя вкладками:
+    «Фото»         — загрузка фото платы, полный отчёт + вердикт
+    «Живая камера» — поток с веб-камеры, маски дефектов в реальном времени
+    «Метрики»      — сравнение моделей (mAP и т.п.)
+  В шапке — переключатель моделей и индикатор связи с API.
+
+  ЧТО СДЕЛАТЬ (TODO):
+  1. Привести к товарному виду (стили в css/style.css).
+  2. Проверить вёрстку на проекторе/ноутбуке для демо (крупные шрифты!).
+  3. Вкладка «Метрики» — сейчас каркас, оформление на js/metrics.js.
+  ============================================================ -->
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PCB Defect Inspector — дефекты печатных плат</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="header__title">
+    <h1>PCB Defect Inspector</h1>
+    <span class="header__subtitle">определение дефектов печатных плат</span>
+  </div>
+  <div class="header__controls">
+    <label for="model-select">Модель:</label>
+    <select id="model-select"></select>
+    <span id="health-dot" class="health-dot health-dot--unknown" title="Статус API"></span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab tab--active" data-tab="photo">Фото</button>
+  <button class="tab" data-tab="camera">Живая камера</button>
+  <button class="tab" data-tab="metrics">Метрики</button>
+</nav>
+
+<main>
+  <!-- ==================== ВКЛАДКА «ФОТО» ==================== -->
+  <section id="tab-photo" class="tab-content tab-content--active">
+    <div class="layout-two-col">
+      <div class="col-left">
+        <!-- TODO [Frontend]: зона загрузки работает, но оформление (иконка,
+             подсказка форматов, состояние drag-over) — довести до ума -->
+        <div id="dropzone" class="dropzone">
+          <p>Перетащите фото платы сюда<br>или</p>
+          <label class="btn btn--file">
+            Выбрать файл
+            <input type="file" id="photo-input" accept="image/*" hidden>
+          </label>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="photo-canvas"></canvas>
+          <p id="photo-empty-hint" class="empty-hint">Изображение не загружено</p>
+        </div>
+      </div>
+      <div class="col-right">
+        <!-- Вердикт: badges с классами verdict--ok / verdict--warning / verdict--reject -->
+        <div id="photo-verdict" class="verdict verdict--hidden">
+          <span id="photo-verdict-status" class="verdict__status"></span>
+          <p id="photo-verdict-reason" class="verdict__reason"></p>
+        </div>
+        <h3>Детекции</h3>
+        <!-- TODO [Frontend]: таблица наполняется в js/photo.js.
+             Приятное улучшение — подсветка строки при наведении
+             и рамки соответствующего цвета у класса (цвета в js/shared.js) -->
+        <table class="detections-table">
+          <thead>
+            <tr><th>Класс</th><th>Уверенность</th><th>Рамка (x1, y1, x2, y2)</th></tr>
+          </thead>
+          <tbody id="photo-detections-body"><!-- строки добавляет js --></tbody>
+        </table>
+        <p id="photo-meta" class="meta-line"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== ВКЛАДКА «ЖИВАЯ КАМЕРА» ==================== -->
+  <section id="tab-camera" class="tab-content">
+    <div class="camera-warning" id="camera-warning" hidden></div>
+    <div class="camera-controls">
+      <button id="camera-start" class="btn btn--primary">Запустить камеру</button>
+      <button id="camera-stop" class="btn" disabled>Остановить</button>
+      <span id="camera-status" class="camera-status">Камера не запущена</span>
+      <span id="camera-fps" class="camera-fps"></span>
+    </div>
+    <div class="canvas-wrap canvas-wrap--camera">
+      <!-- Скрытый <video> — источник кадров; всё рисуем на canvas -->
+      <video id="camera-video" autoplay playsinline muted hidden></video>
+      <canvas id="camera-canvas"></canvas>
+      <p id="camera-empty-hint" class="empty-hint">Камера не запущена</p>
+    </div>
+    <p class="camera-note">
+      Кадр сжимается до 640px и уходит на <code>/api/frame</code>;
+      следующий кадр отправляется только после ответа — поток сам
+      подстраивается под скорость модели.
+    </p>
+  </section>
+
+  <!-- ==================== ВКЛАДКА «МЕТРИКИ» ==================== -->
+  <section id="tab-metrics" class="tab-content">
+    <!-- TODO [Frontend]: сейчас контейнер пустой, наполняется в js/metrics.js.
+         Идея: карточка на каждую модель — общий mAP@0.5 (box/mask),
+         таблица per-class, бейдж "бейзлайн HF" vs "наша модель" -->
+    <div id="metrics-container" class="metrics-container">
+      <p class="empty-hint">Загрузка метрик…</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  Хакатон «Осень 2026» · Задание 4 · PCB Defect Inspector
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/photo.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/metrics.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# ============================================================
+# Запуск: docker compose up --build
+# Сервис поднимется на http://localhost:8000
+#
+# Веса моделей НЕ пекутся в образ — подключаются папкой ml/weights.
+# Для GPU-инференса на Windows проще нативный запуск (см. Dockerfile).
+# ============================================================
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ml/weights:/app/ml/weights       # скачанные/обученные веса
+      - ./ml/metrics.json:/app/ml/metrics.json
+    environment:
+      # Когда веса лежат в ml/weights — переключитесь в false
+      - USE_MOCK=true
+      - MODEL_PATH=/app/ml/weights/hf_yolov8m_seg.pt
+    restart: unless-stopped

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# ML: веса и датасеты НЕ коммитим (большие файлы)
+*.pt
+*.onnx
+*.engine
+ml/data/
+ml/datasets/
+ml/runs/
+ml/weights/
+
+# Секреты и окружение
+.env
+.env.*
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log
