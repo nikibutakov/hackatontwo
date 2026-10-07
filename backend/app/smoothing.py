@@ -7,13 +7,16 @@
 # в CONFIRM_FRAMES кадрах подряд и держит его на экране ещё
 # HOLD_MS миллисекунд после пропадания.
 #
+# КАК РАБОТАЕТ: каждый дефект — отдельный "трек" (класс + место на
+# кадре). Детекцию нового кадра привязываем к треку того же класса,
+# чья рамка перекрывается с ней сильнее всего (IoU >= SMOOTH_IOU_MATCH).
+# Не нашлось пары — заводим новый трек. Так два dry_joint в разных
+# местах живут и подтверждаются независимо.
+#
 # ЧТО СДЕЛАТЬ (TODO):
-# 1. Рабочая версия уже написана (сглаживание по классу).
-#    Улучшение: привязка к МЕСТУ на кадре (сопоставление рамок
-#    по IoU между кадрами), чтобы два разных dry_joint в разных
-#    местах не сливались в один счётчик.
-# 2. Подобрать CONFIRM_FRAMES / HOLD_MS в config.py на реальном
-#    потоке (цель: маски не мигают, но появление заметно в течение ~0.5 с).
+# 1. Подобрать CONFIRM_FRAMES / HOLD_MS / SMOOTH_IOU_MATCH в config.py
+#    на реальном потоке (цель: маски не мигают, но появление заметно
+#    в течение ~0.5 с).
 # ============================================================
 
 import time
@@ -21,55 +24,74 @@ import time
 from . import config
 
 
+def iou(a: list[float], b: list[float]) -> float:
+    """Intersection over Union двух рамок [x1, y1, x2, y2]: 0 — не пересекаются,
+    1 — совпадают. Мера того, что это "тот же самый" дефект."""
+    ix1, iy1 = max(a[0], b[0]), max(a[1], b[1])
+    ix2, iy2 = min(a[2], b[2]), min(a[3], b[3])
+    inter = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
+    if inter == 0:
+        return 0.0
+    area_a = (a[2] - a[0]) * (a[3] - a[1])
+    area_b = (b[2] - b[0]) * (b[3] - b[1])
+    return inter / (area_a + area_b - inter)
+
+
 class FrameSmoother:
     """Сглаживание детекций по времени. Один экземпляр на поток камеры."""
 
-    def __init__(self, confirm_frames: int = None, hold_ms: int = None):
-        self.confirm_frames = confirm_frames or config.CONFIRM_FRAMES
-        self.hold_ms = hold_ms or config.HOLD_MS
-        # class_name -> {"streak": сколько кадров подряд видели,
-        #                "shown": показан ли сейчас,
-        #                "last_seen_ms": время последнего появления}
-        self._state: dict[str, dict] = {}
-        # последний стабильный вид детекции для показа (с реальными координатами)
-        self._last_detection: dict[str, dict] = {}
+    def __init__(self, confirm_frames: int = None, hold_ms: int = None, iou_match: float = None):
+        # "is None", а не "or": иначе явно переданный 0 молча заменился бы дефолтом
+        self.confirm_frames = config.CONFIRM_FRAMES if confirm_frames is None else confirm_frames
+        self.hold_ms = config.HOLD_MS if hold_ms is None else hold_ms
+        self.iou_match = config.SMOOTH_IOU_MATCH if iou_match is None else iou_match
+        # Трек: {"class_name", "det" (последний вид детекции для показа),
+        #        "streak" (кадров подряд), "shown", "last_seen_ms"}
+        self._tracks: list[dict] = []
+
+    def reset(self) -> None:
+        """Забыть всё (при смене модели / перезапуске камеры)."""
+        self._tracks = []
 
     def process(self, detections: list[dict]) -> list[dict]:
         """Принимает сырые детекции кадра, возвращает стабилизированные."""
         now_ms = time.time() * 1000
-        seen_classes = {det["class_name"] for det in detections}
+        matched: set[int] = set()  # id() треков, уже получивших детекцию в этом кадре
 
-        # обновляем счётчики
-        for det in detections:
-            name = det["class_name"]
-            state = self._state.setdefault(name, {"streak": 0, "shown": False, "last_seen_ms": 0})
-            state["streak"] += 1
-            state["last_seen_ms"] = now_ms
-            self._last_detection[name] = det
+        # 1. Сопоставление. Самые уверенные детекции выбирают трек первыми.
+        for det in sorted(detections, key=lambda d: d["confidence"], reverse=True):
+            best, best_iou = None, self.iou_match
+            for track in self._tracks:
+                if id(track) in matched or track["class_name"] != det["class_name"]:
+                    continue
+                score = iou(track["det"]["bbox"], det["bbox"])
+                if score >= best_iou:
+                    best, best_iou = track, score
+            if best is None:
+                best = {"class_name": det["class_name"], "streak": 0, "shown": False}
+                self._tracks.append(best)
+            best["det"] = det
+            best["streak"] += 1          # ровно +1 за кадр на трек
+            best["last_seen_ms"] = now_ms
+            matched.add(id(best))
 
-        for name, state in self._state.items():
-            if name not in seen_classes:
-                state["streak"] = 0
+        # 2. Треки без детекции в этом кадре — серия прервана
+        for track in self._tracks:
+            if id(track) not in matched:
+                track["streak"] = 0
 
-        # решаем, что показывать
+        # 3. Что показывать
         result = []
-        for name, state in self._state.items():
-            confirmed = state["streak"] >= self.confirm_frames
-            still_holding = now_ms - state["last_seen_ms"] < self.hold_ms
-            if confirmed:
-                state["shown"] = True
-            elif not still_holding:
-                state["shown"] = False
-            if state["shown"] and name in self._last_detection:
-                result.append(self._last_detection[name])
+        for track in self._tracks:
+            if track["streak"] >= self.confirm_frames:
+                track["shown"] = True
+            elif now_ms - track["last_seen_ms"] >= self.hold_ms:
+                track["shown"] = False
+            if track["shown"]:
+                result.append(track["det"])
 
-        # чистим забытые классы, чтобы состояние не росло бесконечно
-        stale = [n for n, s in self._state.items()
-                 if not s["shown"] and s["streak"] == 0 and now_ms - s["last_seen_ms"] > 5000]
-        for name in stale:
-            self._state.pop(name, None)
-            self._last_detection.pop(name, None)
-
+        # 4. Чистка: пропавшие и не показываемые треки больше не нужны
+        self._tracks = [t for t in self._tracks if t["shown"] or t["streak"] > 0]
         return result
 
 
