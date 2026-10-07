@@ -43,15 +43,36 @@ curl -F "image=@board.jpg" http://localhost:8000/api/analyze
       {
         "class_name": "dry_joint",
         "label": "непропаянный элемент",
+        "category": "unsoldered",
         "count": 1,
         "area_pct": 0.4,
         "status": "reject",
         "note": null
       }
     ]
-  }
+  },
+  "tz_checklist": [
+    { "id": "open_circuit", "title": "Разрыв на дорожках платы", "state": "not_checked",
+      "found": [], "approximate": false,
+      "note": "активная модель не распознаёт дефекты этого типа" },
+    { "id": "unsoldered", "title": "Непропаянные элементы", "state": "reject",
+      "found": ["непропаянный элемент"], "approximate": false, "note": null },
+    { "id": "component_damage", "title": "Повреждение компонентов", "state": "clear",
+      "found": [], "approximate": true,
+      "note": "приближённо: модель распознаёт «неправильная установка компонента»" },
+    { "id": "other", "title": "Иные дефекты", "state": "clear",
+      "found": [], "approximate": false, "note": null }
+  ]
 }
 ```
+
+- `tz_checklist` — **проверка по пунктам задания 4**, в порядке текста ТЗ.
+  `state`: `reject` / `warning` — найдены дефекты (худший статус);
+  `clear` — модель этот пункт проверяет, дефектов нет;
+  `not_checked` — у активной модели нет ни одного класса этого пункта
+  (честнее, чем «не найдено»). `approximate: true` — пункт закрыт
+  классом-приближением. Пункты и привязка классов — `config.TZ_CATEGORIES`
+  и поле `category` в `config.VERDICT_RULES`.
 
 - `polygon` — полигон маски (только у сегментационных моделей; у детекционных `null`).
 - `status`: `ok` (годен) / `warning` (проверка оператора) / `reject` (брак).

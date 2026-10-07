@@ -22,8 +22,8 @@ from PIL import Image
 
 from .. import config
 from ..model_manager import manager
-from ..schemas import AnalyzeResponse, Detection, Summary, Verdict
-from ..verdict import build_summary, build_verdict
+from ..schemas import AnalyzeResponse, Detection, Summary, TzCheckItem, Verdict
+from ..verdict import build_summary, build_tz_checklist, build_verdict
 
 router = APIRouter(prefix="/api", tags=["analyze"])
 
@@ -59,9 +59,12 @@ async def analyze(image: UploadFile = File(..., description="Изображен�
         )
     elapsed_ms = int((time.perf_counter() - t0) * 1000)
 
-    # 3. Сводка и вердикт
+    # 3. Сводка, вердикт и чек-лист по пунктам ТЗ.
+    # Чек-листу нужны классы ИМЕННО той модели, что считала: по ним он
+    # отличает "дефектов нет" от "модель такие дефекты не ищет".
     summary = build_summary(raw_detections)
     verdict = build_verdict(raw_detections, pil_image.size)
+    tz_checklist = build_tz_checklist(verdict["defects"], model.class_names())
 
     # 4. Формируем ответ по схеме
     return AnalyzeResponse(
@@ -71,4 +74,5 @@ async def analyze(image: UploadFile = File(..., description="Изображен�
         detections=[Detection(**det) for det in raw_detections],
         summary=Summary(**summary),
         verdict=Verdict(**verdict),
+        tz_checklist=[TzCheckItem(**item) for item in tz_checklist],
     )

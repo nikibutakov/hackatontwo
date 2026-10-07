@@ -60,24 +60,44 @@ ACTIVE_MODEL = "hf-keremberke-yolov8m-seg"
 #   "reject_count":    (необяз.) столько дефектов класса и больше => брак
 #   "reject_area_pct": (необяз.) суммарная площадь дефектов класса в % от
 #                      площади кадра, начиная с которой => брак
+#   "category":        пункт ТЗ, к которому относится класс (id из TZ_CATEGORIES)
+#   "approximate":     (необяз.) True — класс закрывает пункт ТЗ лишь
+#                      приблизительно (в отчёте это честно помечается)
 # Пороги только ПОВЫШАЮТ warning до reject. Класс, которого нет в таблице,
-# считается warning (неизвестное — показать оператору, но не браковать).
+# считается warning и относится к "иным дефектам" (неизвестное — показать
+# оператору, но не браковать).
 # Площадь считается по полигону маски, у моделей детекции — по рамке.
 # ВАЖНО: % берётся от КАДРА, а не от платы — для фото крупным планом,
 # где плата занимает почти весь кадр, это близкие величины.
 VERDICT_RULES: dict[str, dict] = {
     # --- классы бейзлайн-модели с HF ---
-    "dry_joint":              {"severity": "reject"},   # непропай — брак
-    "short_circuit":          {"severity": "reject"},   # короткое замыкание — брак
-    "incorrect_installation": {"severity": "reject"},   # компонент стоит не там/не так — брак
-    "pcb_damage":             {"severity": "warning", "reject_area_pct": 1.0},  # мелкое — проверка, крупное — брак
+    "dry_joint":              {"severity": "reject", "category": "unsoldered"},   # непропай — брак
+    "short_circuit":          {"severity": "reject", "category": "other"},        # короткое замыкание — брак
+    # компонент стоит не там/не так — брак. Ближайшее к "повреждению компонентов",
+    # но это не то же самое — отсюда approximate
+    "incorrect_installation": {"severity": "reject", "category": "component_damage", "approximate": True},
+    # повреждение САМОЙ ПЛАТЫ (не компонента): мелкое — проверка, крупное — брак
+    "pcb_damage":             {"severity": "warning", "reject_area_pct": 1.0, "category": "other"},
     # --- классы своей модели на DeepPCB ---
-    "open_circuit":           {"severity": "reject"},   # РАЗРЫВ ДОРОЖКИ — прямое требование ТЗ
-    "missing_hole":           {"severity": "reject"},
-    "spurious_copper":        {"severity": "warning", "reject_count": 3, "reject_area_pct": 1.0},
-    "mouse_bite":             {"severity": "warning", "reject_count": 3},
-    "spur":                   {"severity": "warning", "reject_count": 3},
+    "open_circuit":           {"severity": "reject", "category": "open_circuit"},  # РАЗРЫВ ДОРОЖКИ — прямое требование ТЗ
+    "missing_hole":           {"severity": "reject", "category": "other"},
+    "spurious_copper":        {"severity": "warning", "reject_count": 3, "reject_area_pct": 1.0, "category": "other"},
+    "mouse_bite":             {"severity": "warning", "reject_count": 3, "category": "other"},
+    "spur":                   {"severity": "warning", "reject_count": 3, "category": "other"},
 }
+
+# ---------- Пункты ТЗ (задание 4) ----------
+# Порядок и формулировки — как в тексте задания: "разрыв на дорожках платы,
+# наличие не пропаянных элементов, повреждение компонентов, иные дефекты".
+# По ним строится чек-лист "Проверка по ТЗ" в ответе /api/analyze.
+# Новый класс модели -> укажите его "category" в VERDICT_RULES.
+TZ_CATEGORIES: list[dict] = [
+    {"id": "open_circuit",     "title": "Разрыв на дорожках платы"},
+    {"id": "unsoldered",       "title": "Непропаянные элементы"},
+    {"id": "component_damage", "title": "Повреждение компонентов"},
+    {"id": "other",            "title": "Иные дефекты"},
+]
+DEFAULT_CATEGORY = "other"
 
 # ---------- Сглаживание живого потока (анти-мерцание масок) ----------
 # Дефект показывается на экране только если подтверждён CONFIRM_FRAMES

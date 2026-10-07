@@ -30,6 +30,7 @@ class DefectGroup(BaseModel):
     """Дефекты одного класса и решение по ним (разбор вердикта)."""
     class_name: str
     label: str = Field(description="Русское название класса для UI")
+    category: str = Field(description="Пункт ТЗ (id из config.TZ_CATEGORIES)")
     count: int
     area_pct: Optional[float] = Field(description="Суммарная площадь в % от кадра (None — размер кадра неизвестен)")
     status: Literal["ok", "warning", "reject"]
@@ -55,6 +56,18 @@ class Summary(BaseModel):
     by_class: dict[str, int] = Field(description="Количество дефектов по классам")
 
 
+class TzCheckItem(BaseModel):
+    """Один пункт чек-листа "Проверка по ТЗ"."""
+    id: str = Field(description="id пункта: open_circuit | unsoldered | component_damage | other")
+    title: str = Field(description="Формулировка пункта, как в тексте задания")
+    state: Literal["reject", "warning", "clear", "not_checked"] = Field(
+        description="reject/warning — найдены дефекты; clear — проверено, чисто; "
+                    "not_checked — активная модель не распознаёт дефекты этого типа")
+    found: list[str] = Field(default_factory=list, description="Найденные дефекты этого пункта, текстом")
+    approximate: bool = Field(default=False, description="Пункт закрыт классом-приближением")
+    note: Optional[str] = Field(default=None, description="Пояснение (приближение / не проверяется)")
+
+
 class AnalyzeResponse(BaseModel):
     """Ответ POST /api/analyze (полный отчёт по фотографии)."""
     model: str = Field(description="id модели, которая выполняла инференс")
@@ -63,6 +76,10 @@ class AnalyzeResponse(BaseModel):
     detections: list[Detection]
     summary: Summary
     verdict: Verdict
+    tz_checklist: list[TzCheckItem] = Field(
+        default_factory=list,
+        description="Проверка по пунктам ТЗ (задание 4), в порядке текста задания",
+    )
 
 
 class FrameResponse(BaseModel):

@@ -60,6 +60,11 @@ class BasePcbModel:
         """Текст последней ошибки загрузки (None — ошибок не было)."""
         return None
 
+    def class_names(self) -> Optional[list[str]]:
+        """Какие классы модель УМЕЕТ находить (None — неизвестно).
+        Нужно чек-листу ТЗ: "не найдено" и "модель это не проверяет" — разные вещи."""
+        return None
+
 
 class MockModel(BasePcbModel):
     """Заглушка: возвращает 2-3 правдоподобные детекции без ML.
@@ -73,6 +78,9 @@ class MockModel(BasePcbModel):
         {"class_name": "short_circuit", "cx": 0.62, "cy": 0.58, "w": 0.10, "h": 0.05},
         {"class_name": "pcb_damage", "cx": 0.48, "cy": 0.70, "w": 0.06, "h": 0.06},
     ]
+
+    def class_names(self) -> Optional[list[str]]:
+        return [d["class_name"] for d in self.FAKE_DEFECTS]
 
     def predict(self, image) -> list[dict]:
         width, height = image.size
@@ -129,6 +137,12 @@ class YoloModel(BasePcbModel):
     @property
     def load_error(self) -> Optional[str]:
         return self._load_error
+
+    def class_names(self) -> Optional[list[str]]:
+        # names у ultralytics — {0: 'dry_joint', ...}; до загрузки весов неизвестны
+        if self._model is None:
+            return None
+        return [str(name) for name in self._model.names.values()]
 
     def predict(self, image) -> list[dict]:
         self.load()

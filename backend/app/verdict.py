@@ -113,6 +113,7 @@ def _evaluate_group(class_name: str, dets: list[dict], image_area: Optional[floa
     return {
         "class_name": class_name,
         "label": label(class_name),
+        "category": rule.get("category", config.DEFAULT_CATEGORY),
         "count": count,
         "area_pct": area_pct,
         "status": status,
@@ -164,3 +165,61 @@ def build_verdict(detections: list[dict], image_size: tuple[int, int] | None = N
         status = "ok"
 
     return {"status": status, "reason": reason, "defects": defects}
+
+
+def _category_of(class_name: str) -> str:
+    return config.VERDICT_RULES.get(class_name, DEFAULT_RULE).get("category", config.DEFAULT_CATEGORY)
+
+
+def build_tz_checklist(defects: list[dict], model_classes: Optional[list[str]]) -> list[dict]:
+    """Чек-лист по пунктам ТЗ (config.TZ_CATEGORIES) для отчёта по фото.
+
+    defects       — разбор из build_verdict()["defects"];
+    model_classes — классы, которые умеет находить модель (None — неизвестно,
+                    тогда считаем, что проверяются все пункты).
+
+    state пункта:
+      "reject" / "warning" — найдены дефекты (худший статус среди них);
+      "clear"              — модель этот пункт проверяет, дефектов нет;
+      "not_checked"        — у модели нет ни одного класса этого пункта:
+                             честнее сказать "не проверяется", чем "не найдено".
+    """
+    items = []
+    for cat in config.TZ_CATEGORIES:
+        groups = [g for g in defects
+                  if g["category"] == cat["id"] and g["status"] != "ok"]
+
+        if model_classes is None:
+            covering = None
+        else:
+            covering = [c for c in model_classes if _category_of(c) == cat["id"]]
+        # "иные дефекты" проверяются всегда, когда модель вообще что-то находит
+        checked = covering is None or bool(covering) or bool(groups)
+        # приближение: все классы модели, закрывающие пункт, помечены approximate
+        approximate = bool(covering) and all(
+            config.VERDICT_RULES.get(c, {}).get("approximate") for c in covering)
+
+        if groups:
+            worst = max(groups, key=lambda g: SEVERITY_ORDER[g["status"]])
+            state = worst["status"]
+        elif checked:
+            state = "clear"
+        else:
+            state = "not_checked"
+
+        note = None
+        if approximate:
+            names = ", ".join(label(c) for c in covering)
+            note = f"приближённо: модель распознаёт «{names}»"
+        elif state == "not_checked":
+            note = "активная модель не распознаёт дефекты этого типа"
+
+        items.append({
+            "id": cat["id"],
+            "title": cat["title"],
+            "state": state,
+            "found": [_describe(g) for g in groups],
+            "approximate": approximate,
+            "note": note,
+        })
+    return items
