@@ -39,6 +39,11 @@ RU_LABELS = {
     "spurious_copper": "лишняя медь",
     "mouse_bite": "дефект края дорожки («мышиный укус»)",
     "spur": "заусенец дорожки",
+    # классы модели DsPCBSD+
+    "hole_breakout": "смещение отверстия",
+    "conductor_scratch": "царапина на дорожке",
+    "conductor_foreign_object": "загрязнение проводника",
+    "base_material_foreign_object": "постороннее включение в основании",
 }
 
 STATUS_LABELS = {

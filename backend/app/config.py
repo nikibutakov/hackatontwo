@@ -41,14 +41,32 @@ INPUT_SIZE = 640        # размер, в который модель сжим�
 #   и научитесь переключаться через UI (POST /api/models/{id}/activate).
 MODEL_REGISTRY: list[dict] = [
     {
+        "id": "pku-yolov8s-ours",
+        "type": "detection",
+        "path": "ml/weights/pcb_yolov8s.pt",
+        "description": "Наша: PKU-corrected, mAP50 0.943 (board-disjoint), 11 мс/кадр",
+    },
+    {
+        "id": "hf-janani-deeppcb-yolov8s",
+        "type": "detection",
+        "path": "ml/weights/hf_yolov8s_deeppcb.pt",
+        "description": "DeepPCB: 6 классов дорожек, mAP50 0.985 в домене датасета",
+    },
+    {
+        "id": "hf-janani-dspcbsd-yolov8m",
+        "type": "detection",
+        "path": "ml/weights/hf_yolov8m_dspcbsd.pt",
+        "description": "DsPCBSD+: 9 классов, закрывает «иные дефекты» из ТЗ",
+    },
+    {
         "id": "hf-keremberke-yolov8m-seg",
         "type": "segmentation",   # выдаёт маски (полигоны)
         "path": "ml/weights/hf_yolov8m_seg.pt",
-        "description": "Бейзлайн с Hugging Face: dry_joint, incorrect_installation, pcb_damage, short_circuit",
+        "description": "Сегментация, домен реальных фото (камера), mAP50 0.57",
     },
 ]
 
-ACTIVE_MODEL = "hf-keremberke-yolov8m-seg"
+ACTIVE_MODEL = "pku-yolov8s-ours"
 
 # ---------- Бизнес-правила вердикта ----------
 #
@@ -87,6 +105,39 @@ VERDICT_RULES: dict[str, dict] = {
     "spurious_copper":        {"severity": "warning", "reject_count": 3, "reject_area_pct": 1.0, "category": "other"},
     "mouse_bite":             {"severity": "warning", "reject_count": 3, "category": "other"},
     "spur":                   {"severity": "warning", "reject_count": 3, "category": "other"},
+    # --- Janani-V DsPCBSD+ («иные дефекты» из ТЗ) ---
+    "hole_breakout":                {"severity": "warning", "reject_count": 3, "category": "other"},  # отверстие смещено с площадки
+    "conductor_scratch":            {"severity": "warning", "reject_area_pct": 1.0, "category": "other"},  # царапина на дорожке
+    "conductor_foreign_object":     {"severity": "warning", "category": "other"},  # загрязнение проводника
+    "base_material_foreign_object": {"severity": "warning", "category": "other"},  # включение в основании платы
+}
+
+# ---------- Алиасы имён классов ----------
+# Каноническое имя <- как класс называется в чекпойнте конкретной модели.
+# Нормализация происходит в model_manager.YoloModel.predict: каждое имя класса
+# проходит через алиасы до того, как уйдёт в вердикт и на фронтенд.
+# Порядок безымянных классов DsPCBSD+ подтверждён inspector.py автора модели.
+CLASS_ALIASES: dict[str, str] = {
+    # keremberke (с заглавных букв)
+    "Dry_joint": "dry_joint",
+    "Incorrect_installation": "incorrect_installation",
+    "PCB_damage": "pcb_damage",
+    "Short_circuit": "short_circuit",
+    # Janani-V DeepPCB
+    "copper": "spurious_copper",
+    "mousebite": "mouse_bite",
+    "open": "open_circuit",
+    "pin-hole": "missing_hole",
+    # Janani-V DsPCBSD+ (имена-цифры; порядок подтверждён inspector.py автора)
+    "0": "short",
+    "1": "spur",
+    "2": "spurious_copper",
+    "3": "open_circuit",
+    "4": "mouse_bite",
+    "5": "hole_breakout",
+    "6": "conductor_scratch",
+    "7": "conductor_foreign_object",
+    "8": "base_material_foreign_object",
 }
 
 # ---------- Пункты ТЗ (задание 4) ----------

@@ -169,8 +169,11 @@ class YoloModel(BasePcbModel):
 
         for i in range(len(boxes)):
             x1, y1, x2, y2 = [float(v) for v in boxes[i]]
+            raw_name = str(names[int(result.boxes.cls[i])])
             detections.append({
-                "class_name": str(names[int(result.boxes.cls[i])]),
+                # имя класса нормализуется в каноническое (config.CLASS_ALIASES):
+                # модели называют одни и те же дефекты по-разному ("0", "open", "open_circuit")
+                "class_name": config.CLASS_ALIASES.get(raw_name, raw_name),
                 "confidence": round(float(confs[i]), 3),
                 "bbox": [round(x1, 1), round(y1, 1), round(x2, 1), round(y2, 1)],
                 "polygon": [[float(x), float(y)] for x, y in polygons[i]] if polygons is not None else None,
