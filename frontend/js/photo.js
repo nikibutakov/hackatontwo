@@ -9,7 +9,9 @@
 //   - каждый запуск анализа получает номер (requestId): если пользователь
 //     успел выбрать новый файл, ответ по старому выбрасывается;
 //   - наведение на строку таблицы перерисовывает canvas с выделенной
-//     детекцией (остальные приглушены).
+//     детекцией (остальные приглушены);
+//   - блок «Проверка по ТЗ» — чек-лист по пунктам задания 4 из
+//     result.tz_checklist (состояния считает бэкенд, см. verdict.py).
 //
 // ЧТО СДЕЛАТЬ (TODO):
 // 1. Кнопка «Загрузить пример» с картинками из ml/data (удобно для репетиции демо).
@@ -27,8 +29,17 @@ const photoTab = (() => {
   const verdictDefects = document.getElementById("photo-verdict-defects");
   const tbody = document.getElementById("photo-detections-body");
   const metaLine = document.getElementById("photo-meta");
+  const tzBox = document.getElementById("photo-tz");
+  const tzList = document.getElementById("photo-tz-list");
 
   const STATUS_TEXT = { ok: "ГОДЕН", warning: "ПРЕДУПРЕЖДЕНИЕ", reject: "БРАК" };
+  // Значок и подпись состояния пункта ТЗ
+  const TZ_STATE = {
+    reject:      { icon: "✖", text: "найдено" },
+    warning:     { icon: "!", text: "на проверку" },
+    clear:       { icon: "✓", text: "не найдено" },
+    not_checked: { icon: "—", text: "не проверяется" },
+  };
   const MAX_CANVAS_WIDTH = 900;
 
   let requestId = 0;      // номер последнего запуска анализа
@@ -65,6 +76,7 @@ const photoTab = (() => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       emptyHint.hidden = false;
       verdictBox.className = "verdict verdict--hidden";
+      tzBox.hidden = true;
       tbody.innerHTML = "";
       metaLine.textContent = "Ошибка: " + err.message;
     } finally {
@@ -89,6 +101,7 @@ const photoTab = (() => {
     render();
 
     renderVerdict(result.verdict);
+    renderTzChecklist(result.tz_checklist || []);
     renderTable(result.detections);
 
     metaLine.textContent =
@@ -109,6 +122,26 @@ const photoTab = (() => {
                 <span class="verdict__defect-dot"></span>
                 <span>${escapeHtml(g.label)}</span>
                 <span class="verdict__defect-meta">${parts.join(" · ")}</span>
+              </li>`;
+    }).join("");
+  }
+
+  /** Чек-лист по пунктам ТЗ: значок состояния, формулировка, что найдено / пояснение. */
+  function renderTzChecklist(items) {
+    tzBox.hidden = items.length === 0;
+    tzList.innerHTML = items.map((item) => {
+      const state = TZ_STATE[item.state] || { icon: "?", text: item.state };
+      const details = item.found.length
+        ? item.found.map(escapeHtml).join("; ")
+        : state.text;
+      const note = item.note ? `<div class="tz__note">${escapeHtml(item.note)}</div>` : "";
+      return `<li class="tz__item tz__item--${escapeHtml(item.state)}">
+                <span class="tz__icon" title="${escapeHtml(state.text)}">${state.icon}</span>
+                <div class="tz__body">
+                  <div class="tz__name">${escapeHtml(item.title)}</div>
+                  <div class="tz__details">${details}</div>
+                  ${note}
+                </div>
               </li>`;
     }).join("");
   }

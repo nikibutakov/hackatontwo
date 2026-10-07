@@ -66,6 +66,12 @@
           <!-- Разбор по классам из verdict.defects (статус, количество, площадь) -->
           <ul id="photo-verdict-defects" class="verdict__defects"></ul>
         </div>
+        <!-- Чек-лист по пунктам задания 4 (tz_checklist из /api/analyze):
+             ❌/⚠ найдено, ✅ проверено — чисто, — модель этот пункт не проверяет -->
+        <div id="photo-tz" class="tz" hidden>
+          <h3 class="tz__title">Проверка по ТЗ</h3>
+          <ul id="photo-tz-list" class="tz__list"></ul>
+        </div>
         <h3>Детекции</h3>
         <!-- Таблица наполняется в js/photo.js. Наведение на строку
              подсвечивает соответствующую детекцию на изображении -->
