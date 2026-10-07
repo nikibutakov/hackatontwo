@@ -171,7 +171,8 @@ body {
 .meta-line { color: var(--muted); font-size: 13px; }
 
 /* ---------- Вкладка «Камера» ---------- */
-.camera-controls { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.camera-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 14px; }
+.camera-controls select { max-width: 260px; }
 .camera-status { color: var(--muted); }
 .camera-fps { color: var(--accent); font-variant-numeric: tabular-nums; }
 .canvas-wrap--camera { min-height: 420px; }
@@ -194,6 +195,25 @@ body {
 }
 .metric-card h3 { margin-top: 0; }
 .metric-card .placeholder-note { color: var(--warning); font-size: 13px; }
+
+/* ---------- Уведомления (toast) ---------- */
+.toast-container {
+  position: fixed; right: 20px; bottom: 20px; z-index: 100;
+  display: flex; flex-direction: column; gap: 8px;
+  max-width: min(420px, calc(100vw - 40px));
+}
+.toast {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .4);
+  animation: toast-in .2s ease-out;
+}
+.toast--ok    { border-left-color: var(--ok); }
+.toast--error { border-left-color: var(--reject); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 
 /* ---------- Подвал ---------- */
 .footer {

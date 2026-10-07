@@ -85,6 +85,15 @@
     <div class="camera-warning" id="camera-warning" hidden></div>
     <div class="camera-controls">
       <button id="camera-start" class="btn btn--primary">Запустить камеру</button>
+      <!-- Список камер наполняется после первого разрешения доступа
+           (до него браузер не отдаёт названия устройств) -->
+      <select id="camera-device" title="Выбор камеры" hidden></select>
+      <!-- Запасной режим: тот же пайплайн, источник — локальный ролик.
+           Работает без камеры и без HTTPS -->
+      <label class="btn">
+        Видео-файл…
+        <input type="file" id="camera-video-file" accept="video/*" hidden>
+      </label>
       <button id="camera-stop" class="btn" disabled>Остановить</button>
       <span id="camera-status" class="camera-status">Камера не запущена</span>
       <span id="camera-fps" class="camera-fps"></span>
@@ -112,6 +121,9 @@
     </div>
   </section>
 </main>
+
+<!-- Всплывающие уведомления (showToast в js/shared.js) вместо alert() -->
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
 
 <footer class="footer">
   Хакатон «Осень 2026» · Задание 4 · PCB Defect Inspector
