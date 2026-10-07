@@ -179,7 +179,8 @@ curl -X POST http://localhost:8000/api/models/pcb-deeppcb-yolov8s/activate
 
 ## GET `/api/metrics` — метрики валидации
 
-Отдаёт содержимое `ml/metrics.json` (заполняет ML-участник, формат — в ml/README.md).
+Отдаёт содержимое `ml/metrics.json` (заполняет ML-участник, формат — в ml/README.md)
+плюс справочники для вкладки «Метрики».
 
 **Ответ `200`:**
 
@@ -195,11 +196,25 @@ curl -X POST http://localhost:8000/api/models/pcb-deeppcb-yolov8s/activate
       "per_class": { "dry_joint": 0.60 },
       "placeholder": true
     }
-  }
+  },
+  "class_info": {
+    "dry_joint": { "label": "непропаянный элемент", "category": "unsoldered", "approximate": false }
+  },
+  "tz_categories": [
+    { "id": "open_circuit", "title": "Разрыв на дорожках платы" },
+    { "id": "unsoldered", "title": "Непропаянные элементы" },
+    { "id": "component_damage", "title": "Повреждение компонентов" },
+    { "id": "other", "title": "Иные дефекты" }
+  ]
 }
 ```
 
 `placeholder: true` — цифры временные (заглушка для разработки фронтенда).
+`class_info` — для каждого класса из `per_class` всех моделей: русское название,
+пункт ТЗ и признак приближения (из `config.VERDICT_RULES`).
+`tz_categories` — пункты ТЗ в порядке текста задания (`config.TZ_CATEGORIES`).
+Ключи моделей в `models` должны совпадать с `id` в `/api/models` — по ним
+вкладка помечает активную модель.
 **Ошибка `404`** — `ml/metrics.json` не найден.
 
 ---

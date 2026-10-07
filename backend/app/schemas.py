@@ -103,5 +103,13 @@ class ModelInfo(BaseModel):
 
 
 class MetricsResponse(BaseModel):
-    """Ответ GET /api/metrics — содержимое ml/metrics.json как есть."""
-    models: dict[str, dict]
+    """Ответ GET /api/metrics — содержимое ml/metrics.json + справочники для UI."""
+    models: dict[str, dict] = Field(description="ml/metrics.json -> models, как есть")
+    class_info: dict[str, dict] = Field(
+        default_factory=dict,
+        description="Класс -> {label, category, approximate}: русское название и пункт ТЗ",
+    )
+    tz_categories: list[dict] = Field(
+        default_factory=list,
+        description="Пункты ТЗ [{id, title}] в порядке текста задания",
+    )
