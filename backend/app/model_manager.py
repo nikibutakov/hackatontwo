@@ -23,6 +23,7 @@
 
 import logging
 import random
+import threading
 import time
 from typing import Optional
 
@@ -48,7 +49,16 @@ class BasePcbModel:
         raise NotImplementedError
 
     def is_loaded(self) -> bool:
+        """Загружены ли веса в память. НЕ должен ничего грузить сам."""
         return True
+
+    def load(self) -> None:
+        """Загрузить веса (если ещё не загружены). Бросает исключение при ошибке."""
+
+    @property
+    def load_error(self) -> Optional[str]:
+        """Текст последней ошибки загрузки (None — ошибок не было)."""
+        return None
 
 
 class MockModel(BasePcbModel):
@@ -93,31 +103,44 @@ class YoloModel(BasePcbModel):
         self.model_type = model_type
         self.weights_path = str(weights_path)
         self._model = None  # ленивая загрузка при первом predict
+        self._load_error: Optional[str] = None
+        # Инференс идёт в пуле потоков (см. routers/analyze.py), а модель
+        # ultralytics не потокобезопасна: фото и кадр камеры могут прийти
+        # одновременно. Лок пропускает к модели строго по одному запросу.
+        self._lock = threading.Lock()
 
-    def _ensure_loaded(self):
-        if self._model is None:
-            from ultralytics import YOLO  # тяжёлый импорт — только по необходимости
-            log.info("Загружаю веса %s ...", self.weights_path)
-            self._model = YOLO(self.weights_path)
+    def load(self) -> None:
+        with self._lock:
+            if self._model is not None:
+                return
+            try:
+                from ultralytics import YOLO  # тяжёлый импорт — только по необходимости
+                log.info("Загружаю веса %s ...", self.weights_path)
+                self._model = YOLO(self.weights_path)
+                self._load_error = None
+            except Exception as exc:  # веса не скачаны / битые / нет torch
+                self._load_error = str(exc)
+                log.warning("Модель %s не загрузилась: %s", self.model_id, exc)
+                raise
 
     def is_loaded(self) -> bool:
-        try:
-            self._ensure_loaded()
-            return True
-        except Exception as exc:  # веса не скачаны / битые / нет torch
-            log.warning("Модель %s не загрузилась: %s", self.model_id, exc)
-            return False
+        return self._model is not None
+
+    @property
+    def load_error(self) -> Optional[str]:
+        return self._load_error
 
     def predict(self, image) -> list[dict]:
-        self._ensure_loaded()
+        self.load()
         t0 = time.perf_counter()
-        result = self._model.predict(
-            image,
-            conf=config.CONF_THRESHOLD,
-            iou=config.IOU_THRESHOLD,
-            imgsz=config.INPUT_SIZE,
-            verbose=False,
-        )[0]
+        with self._lock:
+            result = self._model.predict(
+                image,
+                conf=config.CONF_THRESHOLD,
+                iou=config.IOU_THRESHOLD,
+                imgsz=config.INPUT_SIZE,
+                verbose=False,
+            )[0]
         elapsed_ms = int((time.perf_counter() - t0) * 1000)
         log.info("Инференс %s: %d детекций за %d мс", self.model_id, len(result.boxes), elapsed_ms)
 
@@ -170,13 +193,33 @@ class ModelManager:
             raise RuntimeError(f"Активная модель '{self.active_id}' не найдена в реестре")
         return model
 
+    def has(self, model_id: str) -> bool:
+        return model_id in self._models
+
+    def ids(self) -> list[str]:
+        return list(self._models.keys())
+
+    def get(self, model_id: str) -> BasePcbModel:
+        return self._models[model_id]
+
     def set_active(self, model_id: str) -> None:
         if model_id not in self._models:
             raise KeyError(model_id)
         self.active_id = model_id
         log.info("Активная модель переключена на %s", model_id)
 
+    def warmup_active(self) -> None:
+        """Загрузить веса активной модели заранее (на старте сервера),
+        чтобы первый запрос с камеры не ждал 1–3 секунды. Ошибку не бросает:
+        сервер должен подняться даже без весов — она будет видна в /api/models."""
+        try:
+            self.get_active().load()
+        except Exception:
+            pass
+
     def list_models(self) -> list[dict]:
+        # ВАЖНО: только читаем состояние, ничего не грузим — иначе
+        # GET /api/models подвешивал бы страницу на загрузку всех весов.
         result = []
         for model_id, model in self._models.items():
             meta = self._descriptions[model_id]
@@ -186,6 +229,7 @@ class ModelManager:
                 "description": meta["description"],
                 "loaded": model.is_loaded(),
                 "active": model_id == self.active_id,
+                "error": model.load_error,
             })
         return result
 

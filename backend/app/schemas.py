@@ -62,6 +62,10 @@ class ModelInfo(BaseModel):
     description: str = ""
     loaded: bool = Field(description="Веса реально загружены в память")
     active: bool = Field(description="Модель выбрана активной")
+    error: Optional[str] = Field(
+        default=None,
+        description="Текст ошибки последней попытки загрузки весов (None — ошибок не было)",
+    )
 
 
 class MetricsResponse(BaseModel):

@@ -17,10 +17,12 @@
 #    (см. docs/ARCHITECTURE.md, раздел про удалённый сервер).
 # ============================================================
 
+import importlib.util
 import logging
-from pathlib import Path
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -31,11 +33,26 @@ from .routers import analyze, live, metrics, models
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s: %(message)s")
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Прогрев: грузим веса активной модели ДО приёма запросов, чтобы
+    # первый кадр с камеры на демо не висел 1–3 секунды.
+    await run_in_threadpool(manager.warmup_active)
+    yield
+
+
 app = FastAPI(
     title="PCB Defect Inspector",
     description="Сервис определения дефектов печатных плат (хакатон, задание 4)",
     version="0.1.0",
+    lifespan=lifespan,
 )
+
+# Есть ли ML-библиотеки — проверяем один раз при старте. find_spec ищет пакет,
+# НЕ импортируя его (импорт ultralytics+torch — это секунды, а /api/health
+# фронтенд дёргает каждые 10 с).
+ML_AVAILABLE = importlib.util.find_spec("ultralytics") is not None
 
 # CORS: разрешаем всё — на хакатоне к API ходят и с localhost (гибридный режим
 # "фронт локально + API на домашнем ПК через Tailscale"), и с удалённых адресов.
@@ -51,16 +68,11 @@ app.add_middleware(
 @app.get("/api/health", tags=["health"])
 async def health():
     """Проверка живости: активно ли API, какая модель, есть ли ML-библиотеки."""
-    try:
-        import ultralytics  # noqa: F401
-        ml_available = True
-    except ImportError:
-        ml_available = False
     return {
         "status": "ok",
         "active_model": manager.active_id,
         "mock_mode": manager.active_id == "mock",
-        "ml_dependencies": ml_available,
+        "ml_dependencies": ML_AVAILABLE,
     }
 
 
