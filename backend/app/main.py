@@ -2,18 +2,20 @@
 # РОЛЬ: Backend-разработчик
 #
 # ЧТО ЗДЕСЬ: точка входа приложения FastAPI.
-#   - собирает все роутеры (/api/analyze, /api/frame, /api/models, /api/metrics)
+#   - собирает все роутеры (/api/analyze, /api/frame, /api/models,
+#     /api/metrics, /api/examples)
 #   - раздаёт фронтенд из ../frontend как статику на "/"
 #   - CORS для гибридного режима (фронт на localhost, API удалённо)
 #   - /api/health для проверки живости
 #
 # ЗАПУСК из корня репозитория:
-#   uvicorn backend.app.main:app --reload --port 8000
+#   разработка: uvicorn backend.app.main:app --reload --port 8000
+#   демо:       run_demo.bat  (проверка стенда + запуск без --reload,
+#               0.0.0.0, ровно один воркер — см. комментарии в батнике)
 # После старта: http://localhost:8000 — сайт, http://localhost:8000/docs — Swagger.
 #
 # ЧТО СДЕЛАТЬ (TODO):
-# 1. Настроить production-запуск (без --reload) для демо.
-# 2. Проверить CORS для схемы "фронт на ноутбуке + API на домашнем ПК"
+# 1. Проверить CORS для схемы "фронт на ноутбуке + API на домашнем ПК"
 #    (см. docs/ARCHITECTURE.md, раздел про удалённый сервер).
 # ============================================================
 
