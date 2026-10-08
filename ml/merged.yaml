@@ -1,0 +1,23 @@
+# Объединённый датасет: PKU-Market-PCB-corrected (x8) + DsPCBSD+
+# Собирается скриптом ml/merge_datasets.py — сначала запусти его.
+#
+# ВАЛИДАЦИЯ — только PKU board-disjoint (152 фото): та же, на которой
+# текущая модель дала mAP50 0.943, поэтому метрики сравнимы напрямую.
+# Путь абсолютный: у ultralytics относительный path резолвится от его
+# внутренней папки датасетов, а не от этого файла.
+path: E:/Hackaton/ml/data/merged
+train: images/train
+val: images/val
+
+nc: 10
+names:
+  0: missing_hole
+  1: mouse_bite
+  2: open_circuit   # разрыв дорожки — ключевой класс ТЗ
+  3: short
+  4: spur
+  5: spurious_copper
+  6: hole_breakout                # DsPCBSD+
+  7: conductor_scratch            # DsPCBSD+
+  8: conductor_foreign_object     # DsPCBSD+
+  9: base_material_foreign_object # DsPCBSD+

@@ -36,6 +36,9 @@ def parse_args():
     parser.add_argument("--imgsz", type=int, default=640, help="размер входа")
     parser.add_argument("--device", default="", help="0 = GPU, cpu = процессор (пусто = авто)")
     parser.add_argument("--resume", action="store_true", help="продолжить прерванное обучение")
+    parser.add_argument("--out", default="",
+                        help="имя итоговых весов в ml/weights (по умолчанию pcb_yolov8<размер>.pt); "
+                             "укажи другое, чтобы не затереть веса уже работающей модели")
     return parser.parse_args()
 
 
@@ -79,7 +82,7 @@ def main():
     # забираем лучшие веса в стандартное место
     WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
     best = PROJECT_ROOT / "ml" / "runs" / "pcb_train" / "weights" / "best.pt"
-    target = WEIGHTS_DIR / f"pcb_yolov8{args.model_size}.pt"
+    target = WEIGHTS_DIR / (args.out or f"pcb_yolov8{args.model_size}.pt")
     shutil.copy(best, target)
     print(f"\nГотово. Лучшие веса: {target}")
     print("ДАЛЬШЕ (вручную):")
