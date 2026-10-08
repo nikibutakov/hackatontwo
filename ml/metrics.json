@@ -40,6 +40,19 @@
       },
       "source": "наша финальная валидация best.pt",
       "placeholder": false
+    },
+    "pku-dspcbsd-merged-yolov8s": {
+      "name": "YOLOv8s · НАША v2: объединение PKU + DsPCBSD+ (10 классов)",
+      "baseline": false,
+      "map50_box": 0.927,
+      "dataset": "PKU-corrected x8 + DsPCBSD+ (14587 train); валидация та же PKU board-disjoint",
+      "per_class": {
+        "missing_hole": 0.961, "mouse_bite": 0.926, "open_circuit": 0.910,
+        "short": 0.935, "spur": 0.897, "spurious_copper": 0.932
+      },
+      "note": "precision 0.978 (vs 0.924 у v1) — вдвое меньше ложных срабатываний; 4 класса DsPCBSD+ (hole_breakout, conductor_scratch, conductor_foreign_object, base_material_foreign_object) закрывают пункт ТЗ «иные дефекты»; в PKU-валидации этих классов нет, поэтому в per_class не отражены",
+      "source": "наша финальная валидация best.pt",
+      "placeholder": false
     }
   }
 }

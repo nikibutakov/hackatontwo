@@ -45,9 +45,14 @@ INPUT_SIZE = 640        # размер, в который модель сжим�
 # Веса в git не входят — передаются отдельно, лежат в ml/weights/.
 MODEL_REGISTRY: list[dict] = [
     {
+        "id": "pku-dspcbsd-merged-yolov8s", "type": "detection",
+        "path": "ml/weights/pcb_merged_yolov8s.pt", "imgsz": 640, "conf": 0.3,
+        "description": "Наша v2: PKU+DsPCBSD+ объединение, 10 классов («иные дефекты»), mAP50 0.927, P 0.978",
+    },
+    {
         "id": "pku-yolov8s-ours", "type": "detection",
         "path": "ml/weights/pcb_yolov8s.pt", "imgsz": 960, "conf": 0.3,
-        "description": "Наша: PKU-corrected, mAP50 0.943 (board-disjoint), 11 мс/кадр",
+        "description": "Наша v1: PKU-corrected, mAP50 0.943 (board-disjoint), 11 мс/кадр",
     },
     {
         "id": "hf-janani-deeppcb-yolov8s", "type": "detection",
@@ -66,7 +71,7 @@ MODEL_REGISTRY: list[dict] = [
     },
 ]
 
-ACTIVE_MODEL = "pku-yolov8s-ours"
+ACTIVE_MODEL = "pku-dspcbsd-merged-yolov8s"
 
 # ---------- Бизнес-правила вердикта ----------
 #
