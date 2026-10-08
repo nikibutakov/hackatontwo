@@ -59,9 +59,13 @@ def test_analyze_rejects_empty_and_garbage(client):
 def test_frame_is_smoothed(client):
     frame = make_image_bytes(640, 480)
     first = upload(client, "/api/frame", frame).json()
-    second = upload(client, "/api/frame", frame).json()
     assert first["detections"] == []          # ещё не подтверждены
-    assert len(second["detections"]) == 3     # подтверждены со 2-го кадра
+    # досылаем кадры до порога подтверждения (CONFIRM_FRAMES из конфига,
+    # чтобы тест не зависел от его подбора под живой поток)
+    last = None
+    for _ in range(config.CONFIRM_FRAMES):
+        last = upload(client, "/api/frame", frame).json()
+    assert len(last["detections"]) == 3       # подтверждены
 
 
 def test_activate_unknown_model_is_404(client):

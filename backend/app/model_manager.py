@@ -106,13 +106,17 @@ class YoloModel(BasePcbModel):
     """Настоящая модель: ultralytics YOLOv8/v11 (детекция или сегментация).
     ultralytics импортируется ЛЕНИВО — без него сервер работает в Mock-режиме."""
 
-    def __init__(self, model_id: str, weights_path, model_type: str, imgsz: int | None = None):
+    def __init__(self, model_id: str, weights_path, model_type: str,
+                 imgsz: int | None = None, conf: float | None = None):
         self.model_id = model_id
         self.model_type = model_type
         self.weights_path = str(weights_path)
         # размер входа при инференсе — из реестра; должен совпадать с тем,
         # на котором модель обучалась (наша PKU-модель — 960, остальные — 640)
         self.input_size = imgsz or config.INPUT_SIZE
+        # порог уверенности — из реестра (для PKU поднят до 0.3: убирает
+        # мерцание пограничных детекций на живом потоке)
+        self.conf_threshold = config.CONF_THRESHOLD if conf is None else conf
         self._model = None  # ленивая загрузка при первом predict
         self._load_error: Optional[str] = None
         # Инференс идёт в пуле потоков (см. routers/analyze.py), а модель
@@ -153,7 +157,7 @@ class YoloModel(BasePcbModel):
         with self._lock:
             result = self._model.predict(
                 image,
-                conf=config.CONF_THRESHOLD,
+                conf=self.conf_threshold,
                 iou=config.IOU_THRESHOLD,
                 imgsz=self.input_size,
                 verbose=False,
@@ -200,7 +204,8 @@ class ModelManager:
         else:
             for entry in config.MODEL_REGISTRY:
                 path = config.PROJECT_ROOT / entry["path"]
-                model = YoloModel(entry["id"], path, entry["type"], imgsz=entry.get("imgsz"))
+                model = YoloModel(entry["id"], path, entry["type"],
+                                  imgsz=entry.get("imgsz"), conf=entry.get("conf"))
                 self._register(model, {"type": entry["type"], "description": entry.get("description", "")})
             self.active_id = config.ACTIVE_MODEL
 

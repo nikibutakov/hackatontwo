@@ -2,7 +2,7 @@
 // РОЛЬ: Frontend-разработчик — ЭТО ГЛАВНАЯ ФИШКА ДЕМО, файл важный
 // ЧТО ЗДЕСЬ: вкладка «Живая камера»:
 //   источник (камера или видео-файл) -> скрытый <video>
-//   цикл: кадр видео -> offscreen canvas ≤640px -> JPEG -> POST /api/frame
+//   цикл: кадр видео -> offscreen canvas ≤960px -> JPEG -> POST /api/frame
 //         -> детекции рисуются поверх видео на видимом canvas
 //   Отрисовка видео идёт на requestAnimationFrame (гладко, 30-60 FPS),
 //   отправка кадров — отдельным циклом "ответил -> шлю следующий"
@@ -39,11 +39,13 @@ const cameraTab = (() => {
   const fpsEl = document.getElementById("camera-fps");
   const warningEl = document.getElementById("camera-warning");
 
-  // offscreen-canvas: сюда снимается кадр для отправки (сжатие до 640px)
+  // offscreen-canvas: сюда снимается кадр для отправки (сжатие до 960px)
   const offscreen = document.createElement("canvas");
   const offCtx = offscreen.getContext("2d");
 
-  const SEND_MAX_WIDTH = 640;    // ширина отправляемого кадра
+  // 960 (было 640): наша PKU-модель работает на 960 — кадр 640 терял мелкие
+  // дефекты, детекции становились неустойчивыми и мерцали
+  const SEND_MAX_WIDTH = 960;    // ширина отправляемого кадра
 
   let running = false;
   let session = 0;               // номер текущего запуска (см. шапку)
@@ -208,7 +210,7 @@ const cameraTab = (() => {
         offCtx.drawImage(video, 0, 0, offscreen.width, offscreen.height);
 
         const blob = await new Promise((resolve) =>
-          offscreen.toBlob(resolve, "image/jpeg", 0.7));
+          offscreen.toBlob(resolve, "image/jpeg", 0.8));
 
         const result = await apiPostFrame(blob);
         if (mySession !== session) return; // ответ пришёл уже после остановки

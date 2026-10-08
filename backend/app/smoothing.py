@@ -13,6 +13,11 @@
 # Не нашлось пары — заводим новый трек. Так два dry_joint в разных
 # местах живут и подтверждаются независимо.
 #
+# КООРДИНАТЫ И УВЕРЕННОСТЬ сглаживаются EMA (скользящее среднее с весом
+# SMOOTH_EMA): рамка «плывёт» за дефектом, а не прыгает от кадра к кадру,
+# уверенность меняется плавно. Без этого показывался бы сырой последний
+# кадр — на живом потоке это выглядело как дёргание.
+#
 # ЧТО СДЕЛАТЬ (TODO):
 # 1. Подобрать CONFIRM_FRAMES / HOLD_MS / SMOOTH_IOU_MATCH в config.py
 #    на реальном потоке (цель: маски не мигают, но появление заметно
@@ -40,14 +45,34 @@ def iou(a: list[float], b: list[float]) -> float:
 class FrameSmoother:
     """Сглаживание детекций по времени. Один экземпляр на поток камеры."""
 
-    def __init__(self, confirm_frames: int = None, hold_ms: int = None, iou_match: float = None):
+    def __init__(self, confirm_frames: int = None, hold_ms: int = None, iou_match: float = None,
+                 ema: float = None):
         # "is None", а не "or": иначе явно переданный 0 молча заменился бы дефолтом
         self.confirm_frames = config.CONFIRM_FRAMES if confirm_frames is None else confirm_frames
         self.hold_ms = config.HOLD_MS if hold_ms is None else hold_ms
         self.iou_match = config.SMOOTH_IOU_MATCH if iou_match is None else iou_match
-        # Трек: {"class_name", "det" (последний вид детекции для показа),
+        self.ema = config.SMOOTH_EMA if ema is None else ema
+        # Трек: {"class_name", "det" (последняя сырая детекция),
+        #        "smooth" (EMA-сглаженная детекция — она уходит на экран),
         #        "streak" (кадров подряд), "shown", "last_seen_ms"}
         self._tracks: list[dict] = []
+
+    def _blend(self, prev: dict | None, new: dict) -> dict:
+        """EMA рамки и уверенности. Первое наблюдение трека — как есть.
+        Полигон усредняем только при равном числе точек (у сегментации
+        их число скачет от кадра к кадру) — иначе берём новый как есть."""
+        if prev is None:
+            return dict(new)
+        a = self.ema  # вес нового наблюдения
+        out = dict(new)
+        out["bbox"] = [round(p * (1 - a) + n * a, 1)
+                       for p, n in zip(prev["bbox"], new["bbox"])]
+        out["confidence"] = round(prev["confidence"] * (1 - a) + new["confidence"] * a, 3)
+        poly_new, poly_prev = new.get("polygon"), prev.get("polygon")
+        if poly_new is not None and poly_prev is not None and len(poly_new) == len(poly_prev):
+            out["polygon"] = [[round(py * (1 - a) + ny * a, 1) for py, ny in zip(pp, pn)]
+                              for pp, pn in zip(poly_prev, poly_new)]
+        return out
 
     def reset(self) -> None:
         """Забыть всё (при смене модели / перезапуске камеры)."""
@@ -71,6 +96,7 @@ class FrameSmoother:
                 best = {"class_name": det["class_name"], "streak": 0, "shown": False}
                 self._tracks.append(best)
             best["det"] = det
+            best["smooth"] = self._blend(best.get("smooth"), det)
             best["streak"] += 1          # ровно +1 за кадр на трек
             best["last_seen_ms"] = now_ms
             matched.add(id(best))
@@ -88,7 +114,7 @@ class FrameSmoother:
             elif now_ms - track["last_seen_ms"] >= self.hold_ms:
                 track["shown"] = False
             if track["shown"]:
-                result.append(track["det"])
+                result.append(track["smooth"])
 
         # 4. Чистка: пропавшие и не показываемые треки больше не нужны
         self._tracks = [t for t in self._tracks if t["shown"] or t["streak"] > 0]
