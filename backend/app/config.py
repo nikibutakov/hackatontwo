@@ -69,6 +69,11 @@ MODEL_REGISTRY: list[dict] = [
         "path": "ml/weights/hf_yolov8m_seg.pt",
         "description": "Сегментация, домен реальных фото (камера), mAP50 0.57",
     },
+    {
+        "id": "hf-yolo26-pku", "type": "detection",
+        "path": "ml/weights/hf_yolo26_pku.pt",
+        "description": "YOLO26 (2025), бенчмарк: честный тест 0.839; 0.995 на нашей val — училась на этих платах",
+    },
 ]
 
 ACTIVE_MODEL = "pku-dspcbsd-merged-yolov8s"

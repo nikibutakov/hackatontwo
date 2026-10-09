@@ -29,6 +29,15 @@
       "source": "метрики автора с карточки модели",
       "placeholder": false
     },
+    "hf-yolo26-pku": {
+      "name": "YOLO26s · чужая, PKU (бенчмарк новейшей архитектуры)",
+      "baseline": true,
+      "map50_box": 0.839,
+      "dataset": "PKU (board-grouped тест автора: 1 плата, 120 фото)",
+      "note": "Бенчмарк ml/bench_val.py: на нашей валидации даёт 0.995 при равномерных 0.99+ на всех трёх платах — её обучающая выборка пересекается с нашими валидационными платами (собственный честный тест автора: 0.839). Для сравнения на неверсиленных данных: 0.839 < 0.944 у нашей v1",
+      "source": "карточка модели + наш бенчмарк (ml/bench_val.py, ml/bench_boards.py)",
+      "placeholder": false
+    },
     "pku-yolov8s-ours": {
       "name": "YOLOv8s · НАША, дообучена на PKU-Market-PCB-corrected",
       "baseline": false,
