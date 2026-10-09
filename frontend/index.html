@@ -107,6 +107,30 @@
         <input type="file" id="camera-video-file" accept="video/*" hidden>
       </label>
       <button id="camera-stop" class="btn" disabled>Остановить</button>
+      <!-- Цифровой зум: модели уходит центр кадра в полном разрешении камеры.
+           Нужен, когда плата далеко и занимает малую часть кадра; когда плата
+           занимает пол-кадра и больше — 1× (проверено: 3× обрезает плату и хуже) -->
+      <label class="camera-zoom">Зум:
+        <select id="camera-zoom" title="Цифровой зум: модель видит только центр кадра">
+          <option value="1" selected>1×</option>
+          <option value="1.5">1.5×</option>
+          <option value="2">2×</option>
+          <option value="3">3×</option>
+        </select>
+      </label>
+      <!-- Порог уверенности для камеры: на живом кадре (блики, муар экрана,
+           размытие) уверенность ниже, чем на фото из датасета -->
+      <label class="camera-zoom">Порог:
+        <select id="camera-conf" title="Минимальная уверенность модели для показа детекции">
+          <option value="" selected>как у модели</option>
+          <option value="0.2">0.2</option>
+          <option value="0.15">0.15</option>
+          <option value="0.1">0.1</option>
+        </select>
+      </label>
+      <!-- Стоп-кадр: текущий кадр -> полный анализ на вкладке «Фото» без
+           сглаживания: видно каждую детекцию и её уверенность (диагностика) -->
+      <button id="camera-snapshot" class="btn" disabled>Стоп-кадр → анализ</button>
       <span id="camera-status" class="camera-status">Камера не запущена</span>
       <span id="camera-fps" class="camera-fps"></span>
     </div>

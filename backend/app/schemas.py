@@ -100,6 +100,10 @@ class ModelInfo(BaseModel):
         default=None,
         description="Текст ошибки последней попытки загрузки весов (None — ошибок не было)",
     )
+    imgsz: int = Field(
+        default=640,
+        description="Размер входа модели, px: камера шлёт кадр ровно такой ширины",
+    )
 
 
 class ExampleInfo(BaseModel):

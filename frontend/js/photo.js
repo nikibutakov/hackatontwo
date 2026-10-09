@@ -61,14 +61,15 @@ const photoTab = (() => {
     dropzone.classList.toggle("dropzone--busy", busy);
   }
 
-  async function analyzeFile(file) {
+  /** conf — порог уверенности (null — порог модели); стоп-кадр камеры передаёт свой. */
+  async function analyzeFile(file, conf = null) {
     const myRequest = ++requestId;
     emptyHint.hidden = true;
     metaLine.textContent = "Анализирую…";
     setBusy(true);
     try {
       // запрос и декодирование картинки идут параллельно
-      const [result, img] = await Promise.all([apiAnalyzeImage(file), loadImage(file)]);
+      const [result, img] = await Promise.all([apiAnalyzeImage(file, conf), loadImage(file)]);
       if (myRequest !== requestId) return; // уже выбрали другой файл
       showResult(img, result);
     } catch (err) {

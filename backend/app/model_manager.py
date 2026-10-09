@@ -44,8 +44,13 @@ class BasePcbModel:
     """Интерфейс модели: принимает PIL.Image, отдаёт список детекций."""
 
     model_id: str = "base"
+    # Размер входа модели: кадр больше этого сервер всё равно сожмёт.
+    # Камера шлёт кадр ровно такой ширины — лишние пиксели только
+    # нагружают сеть (через Tailscale это и есть потолок FPS).
+    input_size: int = config.INPUT_SIZE
 
-    def predict(self, image) -> list[dict]:
+    def predict(self, image, conf: Optional[float] = None) -> list[dict]:
+        """conf — порог уверенности для этого вызова (None — порог модели из реестра)."""
         raise NotImplementedError
 
     def is_loaded(self) -> bool:
@@ -82,7 +87,7 @@ class MockModel(BasePcbModel):
     def class_names(self) -> Optional[list[str]]:
         return [d["class_name"] for d in self.FAKE_DEFECTS]
 
-    def predict(self, image) -> list[dict]:
+    def predict(self, image, conf: Optional[float] = None) -> list[dict]:
         width, height = image.size
         detections = []
         for defect in self.FAKE_DEFECTS:
@@ -151,13 +156,13 @@ class YoloModel(BasePcbModel):
             return None
         return [str(name) for name in self._model.names.values()]
 
-    def predict(self, image) -> list[dict]:
+    def predict(self, image, conf: Optional[float] = None) -> list[dict]:
         self.load()
         t0 = time.perf_counter()
         with self._lock:
             result = self._model.predict(
                 image,
-                conf=self.conf_threshold,
+                conf=self.conf_threshold if conf is None else conf,
                 iou=config.IOU_THRESHOLD,
                 imgsz=self.input_size,
                 verbose=False,
@@ -256,6 +261,7 @@ class ModelManager:
                 "loaded": model.is_loaded(),
                 "active": model_id == self.active_id,
                 "error": model.load_error,
+                "imgsz": model.input_size,
             })
         return result
 

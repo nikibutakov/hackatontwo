@@ -17,8 +17,9 @@
 # ============================================================
 
 import time
+from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from ..images import InvalidImageError, decode_image
@@ -30,7 +31,14 @@ router = APIRouter(prefix="/api", tags=["live"])
 
 
 @router.post("/frame", response_model=FrameResponse)
-async def frame(image: UploadFile = File(..., description="Кадр с камеры (JPEG)")):
+async def frame(
+    image: UploadFile = File(..., description="Кадр с камеры (JPEG)"),
+    conf: Optional[float] = Query(
+        None, ge=0.01, le=0.95,
+        description="Порог уверенности для этого кадра (по умолчанию — порог модели из реестра). "
+                    "На живой камере уверенность ниже, чем на фото из датасета: блики, муар, "
+                    "размытие — порог можно опустить с вкладки «Камера»."),
+):
     """Анализ одного кадра потока: сглаженные детекции, минимум лишнего."""
     # кадры с canvas идут без EXIF — поворот в decode_image для них ничего не стоит
     try:
@@ -42,7 +50,7 @@ async def frame(image: UploadFile = File(..., description="Кадр с каме�
     model = manager.get_active()
     t0 = time.perf_counter()
     try:
-        raw_detections = await run_in_threadpool(model.predict, pil_image)
+        raw_detections = await run_in_threadpool(model.predict, pil_image, conf)
     except Exception as exc:
         raise HTTPException(
             status_code=503,

@@ -224,6 +224,7 @@ body {
 /* ---------- Вкладка «Камера» ---------- */
 .camera-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 14px; }
 .camera-controls select { max-width: 260px; }
+.camera-zoom { color: var(--muted); font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
 .camera-status { color: var(--muted); }
 .camera-fps { color: var(--accent); font-variant-numeric: tabular-nums; }
 .canvas-wrap--camera { min-height: 420px; }
