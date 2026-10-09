@@ -65,6 +65,8 @@
       // ответ — уже обновлённый список с новой активной моделью
       renderModels(await apiActivateModel(modelId));
       showToast(`Активна модель ${modelId}`, "ok");
+      // у моделей разный размер входа (640 / 960) — камера шлёт кадр под новую
+      await cameraTab.refreshModelInfo();
     } catch (err) {
       showToast("Не удалось переключить модель: " + err.message, "error", 7000);
       await refreshModels(); // вернуть селектор на реально активную модель

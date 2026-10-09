@@ -32,17 +32,20 @@ async function apiFetch(path, options = {}) {
 }
 
 /** POST /api/analyze — полный анализ фотографии. */
-async function apiAnalyzeImage(file) {
+async function apiAnalyzeImage(file, conf = null) {
   const form = new FormData();
   form.append("image", file);
-  return apiFetch("/analyze", { method: "POST", body: form });
+  const query = conf ? `?conf=${encodeURIComponent(conf)}` : "";
+  return apiFetch("/analyze" + query, { method: "POST", body: form });
 }
 
-/** POST /api/frame — кадр живого потока (сглаженные детекции). */
-async function apiPostFrame(jpegBlob) {
+/** POST /api/frame — кадр живого потока (сглаженные детекции).
+ *  conf — порог уверенности для кадра (null — порог модели из реестра). */
+async function apiPostFrame(jpegBlob, conf = null) {
   const form = new FormData();
   form.append("image", jpegBlob, "frame.jpg");
-  return apiFetch("/frame", { method: "POST", body: form });
+  const query = conf ? `?conf=${encodeURIComponent(conf)}` : "";
+  return apiFetch("/frame" + query, { method: "POST", body: form });
 }
 
 /** GET /api/models — список моделей. */

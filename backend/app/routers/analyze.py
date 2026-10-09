@@ -16,8 +16,9 @@
 # ============================================================
 
 import time
+from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from ..images import InvalidImageError, decode_image
@@ -29,7 +30,13 @@ router = APIRouter(prefix="/api", tags=["analyze"])
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
-async def analyze(image: UploadFile = File(..., description="Изображение платы (JPEG/PNG)")):
+async def analyze(
+    image: UploadFile = File(..., description="Изображение платы (JPEG/PNG)"),
+    conf: Optional[float] = Query(
+        None, ge=0.01, le=0.95,
+        description="Порог уверенности (по умолчанию — порог модели). Стоп-кадр с камеры "
+                    "передаёт порог, выбранный на вкладке «Камера»."),
+):
     """Полный анализ одного изображения: детекции + сводка + вердикт."""
     # 1. Читаем и валидируем изображение (с поворотом по EXIF)
     try:
@@ -47,7 +54,7 @@ async def analyze(image: UploadFile = File(..., description="Изображен�
     model = manager.get_active()
     t0 = time.perf_counter()
     try:
-        raw_detections = await run_in_threadpool(model.predict, pil_image)
+        raw_detections = await run_in_threadpool(model.predict, pil_image, conf)
     except Exception as exc:
         raise HTTPException(
             status_code=503,
