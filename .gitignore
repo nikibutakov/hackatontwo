@@ -36,3 +36,4 @@ ml/test_images/
 # фото экспериментов и утилиты
 ml/esp/
 tools/
+slides_build/render/
